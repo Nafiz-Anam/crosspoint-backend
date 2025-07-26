@@ -29,37 +29,37 @@ model Branch {
   updatedAt  DateTime @updatedAt
 
   // Relations
-  employees    Employee[]
-  clients  Client[]
-  invoices Invoice[]
+  employees Employee[]
+  clients   Client[]
+  invoices  Invoice[]
 
   @@map("branches")
 }
 
 model Employee {
-  id              String           @id @default(uuid())
-  employeeId      String?          @unique // Format: EMP-BR001-001, EMP-BR002-001, etc.
-  email           String           @unique
-  name            String?
-  password        String
-  role            Role             @default(EMPLOYEE)
-  branchId        String?
-  branch          Branch?          @relation(fields: [branchId], references: [id])
-  isEmailVerified Boolean          @default(false)
-  isActive        Boolean          @default(true)
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  Token           Token[]
+  id                  String           @id @default(uuid())
+  employeeId          String?          @unique // Format: EMP-BR001-001, EMP-BR002-001, etc.
+  email               String           @unique
+  name                String?
+  password            String
+  role                Role             @default(EMPLOYEE)
+  branchId            String?
+  branch              Branch?          @relation(fields: [branchId], references: [id])
+  isEmailVerified     Boolean          @default(false)
+  isActive            Boolean          @default(true)
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+  Token               Token[]
   EmployeePermissions UserPermission[] @relation("EmployeePermissions")
-  attendances     Attendance[]
+  attendances         Attendance[]
 
-  @@map("users")
+  @@map("employees")
 }
 
 model Attendance {
   id         String           @id @default(uuid())
-  employeeId     String
-  employee       Employee             @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  employeeId String
+  employee   Employee         @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   date       DateTime         @default(now()) // Date of attendance
   checkIn    DateTime? // Check-in timestamp
   checkOut   DateTime? // Check-out timestamp
@@ -75,8 +75,8 @@ model Attendance {
 
 model UserPermission {
   id         String     @id @default(uuid())
-  employeeId     String
-  employee       Employee       @relation(fields: [employeeId], references: [id], onDelete: Cascade, name: "EmployeePermissions")
+  employeeId String
+  employee   Employee   @relation(fields: [employeeId], references: [id], onDelete: Cascade, name: "EmployeePermissions")
   permission Permission
   createdAt  DateTime   @default(now())
   updatedAt  DateTime   @updatedAt
@@ -113,6 +113,8 @@ model Service {
   updatedAt    DateTime      @updatedAt
   clients      Client[]
   invoiceItems InvoiceItem[]
+
+  @@map("services")
 }
 
 model Invoice {
@@ -154,8 +156,8 @@ model Token {
   expires     DateTime
   blacklisted Boolean
   createdAt   DateTime  @default(now())
-  employee        Employee      @relation(fields: [employeeId], references: [id])
-  employeeId      String
+  employee    Employee  @relation(fields: [employeeId], references: [id])
+  employeeId  String
 }
 
 enum Role {

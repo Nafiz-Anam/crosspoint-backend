@@ -3,22 +3,31 @@ import { Role, Permission } from "@prisma/client";
 // Define permissions for each role
 const allRoles = {
   [Role.ADMIN]: [
-    // User Management
     Permission.ASSIGN_PERMISSIONS,
+
+    // Employee Management
+    Permission.CREATE_EMPLOYEE,
+    Permission.READ_EMPLOYEE,
+    Permission.UPDATE_EMPLOYEE,
+    Permission.DELETE_EMPLOYEE,
+    Permission.MANAGE_EMPLOYEES,
 
     // All CRUD operations
     Permission.CREATE_CLIENT,
     Permission.READ_CLIENT,
     Permission.UPDATE_CLIENT,
     Permission.DELETE_CLIENT,
+
     Permission.CREATE_SERVICE,
     Permission.READ_SERVICE,
     Permission.UPDATE_SERVICE,
     Permission.DELETE_SERVICE,
+
     Permission.CREATE_INVOICE,
     Permission.READ_INVOICE,
     Permission.UPDATE_INVOICE,
     Permission.DELETE_INVOICE,
+
     Permission.GENERATE_REPORTS,
     Permission.VIEW_REPORTS,
   ],
@@ -35,14 +44,17 @@ const allRoles = {
     Permission.READ_CLIENT,
     Permission.UPDATE_CLIENT,
     Permission.DELETE_CLIENT,
+
     Permission.CREATE_SERVICE,
     Permission.READ_SERVICE,
     Permission.UPDATE_SERVICE,
     Permission.DELETE_SERVICE,
+
     Permission.CREATE_INVOICE,
     Permission.READ_INVOICE,
     Permission.UPDATE_INVOICE,
     Permission.DELETE_INVOICE,
+
     Permission.GENERATE_REPORTS,
     Permission.VIEW_REPORTS,
   ],

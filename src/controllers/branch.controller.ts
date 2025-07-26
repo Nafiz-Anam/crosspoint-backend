@@ -42,12 +42,12 @@ const createBranch = catchAsync(async (req, res) => {
 });
 
 const getAllBranches = catchAsync(async (req, res) => {
-    const branches = await branchService.getAllBranches();
+  const branches = await branchService.getAllBranches();
   res.status(httpStatus.OK).json({
-      success: true,
-      message: "Branches retrieved successfully",
-      data: branches,
-    });
+    success: true,
+    message: "Branches retrieved successfully",
+    data: branches,
+  });
 });
 
 const getBranchById = catchAsync(async (req, res) => {
@@ -61,13 +61,13 @@ const getBranchById = catchAsync(async (req, res) => {
 });
 
 const getBranchByBranchId = catchAsync(async (req, res) => {
-    const { branchId } = req.params;
-    const branch = await branchService.getBranchByBranchId(branchId);
+  const { branchId } = req.params;
+  const branch = await branchService.getBranchByBranchId(branchId);
   res.status(httpStatus.OK).json({
-      success: true,
-      message: "Branch retrieved successfully",
-      data: branch,
-    });
+    success: true,
+    message: "Branch retrieved successfully",
+    data: branch,
+  });
 });
 
 const updateBranch = catchAsync(async (req, res) => {
@@ -110,58 +110,58 @@ const deleteBranch = catchAsync(async (req, res) => {
 });
 
 const getBranchStatistics = catchAsync(async (req, res) => {
-    const { id } = req.params;
-    const statistics = await branchService.getBranchStatistics(id);
+  const { id } = req.params;
+  const statistics = await branchService.getBranchStatistics(id);
   res.status(httpStatus.OK).json({
-      success: true,
-      message: "Branch statistics retrieved successfully",
-      data: statistics,
-    });
+    success: true,
+    message: "Branch statistics retrieved successfully",
+    data: statistics,
+  });
 });
 
 const getAllBranchesWithStatistics = catchAsync(async (req, res) => {
   const branchesWithStats = await branchService.getAllBranchesWithStatistics();
   res.status(httpStatus.OK).json({
-      success: true,
-      message: "Branches with statistics retrieved successfully",
-      data: branchesWithStats,
-    });
+    success: true,
+    message: "Branches with statistics retrieved successfully",
+    data: branchesWithStats,
+  });
 });
 
 const generateEmployeeId = catchAsync(async (req, res) => {
-    const { branchId } = req.params;
-    const employeeId = await branchService.generateEmployeeId(branchId);
+  const { branchId } = req.params;
+  const employeeId = await branchService.generateEmployeeId(branchId);
   res.status(httpStatus.OK).json({
-      success: true,
-      message: "Employee ID generated successfully",
-      data: { employeeId },
-    });
+    success: true,
+    message: "Employee ID generated successfully",
+    data: { employeeId },
+  });
 });
 
 const generateCustomerId = catchAsync(async (req, res) => {
-    const { branchId } = req.params;
-    const customerId = await branchService.generateCustomerId(branchId);
+  const { branchId } = req.params;
+  const customerId = await branchService.generateCustomerId(branchId);
   res.status(httpStatus.OK).json({
-      success: true,
-      message: "Customer ID generated successfully",
-      data: { customerId },
-    });
+    success: true,
+    message: "Customer ID generated successfully",
+    data: { customerId },
+  });
 });
 
 const generateInvoiceId = catchAsync(async (req, res) => {
-    const { branchId } = req.params;
-    const { year, month, date } = req.query;
-    const invoiceId = await branchService.generateInvoiceId(
-      branchId,
-      year ? parseInt(year as string) : undefined,
-      month ? parseInt(month as string) : undefined,
-      date ? parseInt(date as string) : undefined
-    );
+  const { branchId } = req.params;
+  const { year, month, date } = req.query;
+  const invoiceId = await branchService.generateInvoiceId(
+    branchId,
+    year ? parseInt(year as string) : undefined,
+    month ? parseInt(month as string) : undefined,
+    date ? parseInt(date as string) : undefined
+  );
   res.status(httpStatus.OK).json({
-      success: true,
-      message: "Invoice ID generated successfully",
-      data: { invoiceId },
-    });
+    success: true,
+    message: "Invoice ID generated successfully",
+    data: { invoiceId },
+  });
 });
 
 export default {
