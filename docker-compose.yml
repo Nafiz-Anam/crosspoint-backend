@@ -1,0 +1,53 @@
+version: "3.9"
+
+services:
+  api:
+    build: .
+    image: server
+    ports:
+      - "${PORT}:${PORT}"
+    depends_on:
+      - postgresdb
+    networks:
+      - node-network
+    env_file:
+      - .env
+      # establish docker compose watch mode for the api service
+    develop:
+      # specify the files to watch for changes
+      watch:
+        # it'll watch for changes in package.json and package-lock.json and rebuild the container and image if there are any changes
+        - path: ./package.json
+          action: rebuild
+        - path: ./yarn.lock
+          action: rebuild
+        # it'll watch for changes in the backend directory and sync the changes with the container real time
+        - path: ./
+          target: /app/backend
+          action: sync
+
+  postgresdb:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    expose:
+      # Opens port 5432 on the container
+      - "5432"
+      # Where our data will be persisted
+    volumes:
+      - postgresdata:/var/lib/postgresql/data
+    networks:
+      - node-network
+
+volumes:
+  postgresdata:
+    driver: local
+
+networks:
+  node-network:
+    driver: bridge

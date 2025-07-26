@@ -1,0 +1,15 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 90
+    },
+    "auditLog": "C:\\Users\\nafiz\\OneDrive\\Desktop\\backend\\public\\logs\\.b545e59b577b19d0c36b183f1b6a3ed27d113d9b-audit.json",
+    "files": [
+        {
+            "date": 1712655424999,
+            "name": "C:\\Users\\nafiz\\OneDrive\\Desktop\\backend\\public\\logs\\application-2024-04-09.log",
+            "hash": "6bfbbd0c3e03a54ff3b5a9b3f89973528a508b536a6d60b08d91cf07b087d330"
+        }
+    ],
+    "hashType": "sha256"
+}

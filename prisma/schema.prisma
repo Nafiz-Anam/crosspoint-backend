@@ -1,0 +1,220 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Branch {
+  id         String   @id @default(uuid())
+  branchId   String   @unique // Format: BR-001, BR-002, etc.
+  name       String
+  address    String
+  city       String // Italian city
+  postalCode String // Italian postal code (CAP)
+  province   String // Italian province (2-letter code)
+  phone      String? // Branch phone number
+  email      String? // Branch email
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  users    User[]
+  clients  Client[]
+  invoices Invoice[]
+
+  @@map("branches")
+}
+
+model User {
+  id              String           @id @default(uuid())
+  employeeId      String?          @unique // Format: EMP-BR001-001, EMP-BR002-001, etc.
+  email           String           @unique
+  name            String?
+  password        String
+  role            Role             @default(EMPLOYEE)
+  branchId        String?
+  branch          Branch?          @relation(fields: [branchId], references: [id])
+  isEmailVerified Boolean          @default(false)
+  isActive        Boolean          @default(true)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  Token           Token[]
+  UserPermissions UserPermission[]
+  attendances     Attendance[]
+
+  @@map("users")
+}
+
+model Attendance {
+  id         String           @id @default(uuid())
+  userId     String
+  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date       DateTime         @default(now()) // Date of attendance
+  checkIn    DateTime? // Check-in timestamp
+  checkOut   DateTime? // Check-out timestamp
+  totalHours Float? // Total hours worked (calculated)
+  status     AttendanceStatus @default(PRESENT)
+  notes      String? // Additional notes (late arrival, early departure, etc.)
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+
+  @@unique([userId, date]) // One attendance record per user per day
+  @@map("attendances")
+}
+
+model UserPermission {
+  id         String     @id @default(uuid())
+  userId     String
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  permission Permission
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  @@unique([userId, permission])
+}
+
+model Client {
+  id         String    @id @default(uuid())
+  customerId String?   @unique // Format: CUST-BR001-001, CUST-BR002-001, etc.
+  name       String
+  email      String    @unique
+  phone      String?
+  address    String?
+  city       String? // Italian city
+  postalCode String? // Italian postal code (CAP)
+  province   String? // Italian province (2-letter code)
+  serviceId  String
+  service    Service   @relation(fields: [serviceId], references: [id])
+  branchId   String
+  branch     Branch    @relation(fields: [branchId], references: [id])
+  isActive   Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  invoices   Invoice[]
+
+  @@map("clients")
+}
+
+model Service {
+  id           String        @id @default(uuid())
+  name         String
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  clients      Client[]
+  invoiceItems InvoiceItem[]
+}
+
+model Invoice {
+  id            String        @id @default(uuid())
+  invoiceId     String?       @unique // Format: INV-BR001-2024-001, INV-BR002-2024-001, etc.
+  clientId      String
+  client        Client        @relation(fields: [clientId], references: [id])
+  invoiceNumber String        @unique
+  totalAmount   Float
+  status        InvoiceStatus @default(PENDING)
+  dueDate       DateTime
+  issuedDate    DateTime      @default(now())
+  branchId      String
+  branch        Branch        @relation(fields: [branchId], references: [id])
+  notes         String? // Additional notes for the invoice
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  items         InvoiceItem[]
+
+  @@map("invoices")
+}
+
+model InvoiceItem {
+  id        String   @id @default(uuid())
+  invoiceId String
+  invoice   Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  serviceId String
+  service   Service  @relation(fields: [serviceId], references: [id])
+  quantity  Int
+  price     Float
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Token {
+  id          String    @id @default(uuid())
+  token       String    @db.VarChar(255)
+  type        TokenType
+  expires     DateTime
+  blacklisted Boolean
+  createdAt   DateTime  @default(now())
+  user        User      @relation(fields: [userId], references: [id])
+  userId      String
+}
+
+enum Role {
+  ADMIN
+  HR
+  EMPLOYEE
+}
+
+enum TokenType {
+  ACCESS
+  REFRESH
+  RESET_PASSWORD
+  VERIFY_EMAIL
+}
+
+enum Permission {
+  // Client Management
+  CREATE_CLIENT
+  READ_CLIENT
+  UPDATE_CLIENT
+  DELETE_CLIENT
+
+  // Service Management
+  CREATE_SERVICE
+  READ_SERVICE
+  UPDATE_SERVICE
+  DELETE_SERVICE
+
+  // Invoice Management
+  CREATE_INVOICE
+  READ_INVOICE
+  UPDATE_INVOICE
+  DELETE_INVOICE
+
+  // Report Management
+  GENERATE_REPORTS
+  VIEW_REPORTS
+
+  // User Management
+  CREATE_USER
+  READ_USER
+  UPDATE_USER
+  DELETE_USER
+  MANAGE_USERS
+  ASSIGN_PERMISSIONS
+}
+
+enum InvoiceStatus {
+  PENDING
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  HALF_DAY
+  LEAVE
+  HOLIDAY
+}
