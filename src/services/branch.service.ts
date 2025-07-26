@@ -24,7 +24,7 @@ const generateEmployeeId = async (branchId: string): Promise<string> => {
     throw new ApiError(StatusCodes.NOT_FOUND, "Branch not found");
   }
   const branchCode = branch.branchId;
-  const lastEmployee = await prisma.user.findFirst({
+  const lastEmployee = await prisma.employee.findFirst({
     where: { employeeId: { startsWith: `EMP-${branchCode}-` } },
     orderBy: { employeeId: "desc" },
   });
@@ -160,7 +160,7 @@ const getBranchStatistics = async (branchId: string) => {
     include: {
       _count: {
         select: {
-          users: true,
+          employees: true,
           clients: true,
           invoices: true,
         },
@@ -203,7 +203,7 @@ const getBranchStatistics = async (branchId: string) => {
       isActive: branch.isActive,
     },
     statistics: {
-      totalEmployees: branch._count.users,
+      totalEmployees: branch._count.employees,
       totalClients: branch._count.clients,
       totalInvoices: branch._count.invoices,
       totalRevenue,
@@ -220,7 +220,7 @@ const getAllBranchesWithStatistics = async () => {
     include: {
       _count: {
         select: {
-          users: true,
+          employees: true,
           clients: true,
           invoices: true,
         },
@@ -261,7 +261,7 @@ const getAllBranchesWithStatistics = async () => {
         isActive: branch.isActive,
       },
       statistics: {
-        totalEmployees: branch._count.users,
+        totalEmployees: branch._count.employees,
         totalClients: branch._count.clients,
         totalInvoices: branch._count.invoices,
         totalRevenue,

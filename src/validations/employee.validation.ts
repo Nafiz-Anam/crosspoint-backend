@@ -2,7 +2,7 @@ import { Role } from "@prisma/client";
 import Joi from "joi";
 import { password } from "./custom.validation";
 
-const createUser = {
+const createEmployee = {
   body: Joi.object().keys({
     email: Joi.string().required().email(),
     password: Joi.string().required().custom(password),
@@ -11,7 +11,7 @@ const createUser = {
   }),
 };
 
-const getUsers = {
+const getEmployees = {
   query: Joi.object().keys({
     name: Joi.string(),
     role: Joi.string(),
@@ -21,15 +21,15 @@ const getUsers = {
   }),
 };
 
-const getUser = {
+const getEmployee = {
   params: Joi.object().keys({
-    userId: Joi.number().integer(),
+    employeeId: Joi.number().integer(),
   }),
 };
 
-const updateUser = {
+const updateEmployee = {
   params: Joi.object().keys({
-    userId: Joi.number().integer(),
+    employeeId: Joi.number().integer(),
   }),
   body: Joi.object()
     .keys({
@@ -40,13 +40,13 @@ const updateUser = {
     .min(1),
 };
 
-const deleteUser = {
+const deleteEmployee = {
   params: Joi.object().keys({
-    userId: Joi.number().integer(),
+    employeeId: Joi.number().integer(),
   }),
 };
 
-const createHRUser = {
+const createHREmployee = {
   body: Joi.object().keys({
     email: Joi.string().required().email(),
     password: Joi.string().required().custom(password),
@@ -55,7 +55,7 @@ const createHRUser = {
   }),
 };
 
-const createEmployeeUser = {
+const createEmployeeEmployee = {
   body: Joi.object().keys({
     email: Joi.string().required().email(),
     password: Joi.string().required().custom(password),
@@ -65,11 +65,11 @@ const createEmployeeUser = {
 };
 
 export default {
-  createUser,
-  getUsers,
-  getUser,
-  updateUser,
-  deleteUser,
-  createHRUser,
-  createEmployeeUser,
+  createEmployee,
+  getEmployees,
+  getEmployee,
+  updateEmployee,
+  deleteEmployee,
+  createHREmployee,
+  createEmployeeEmployee,
 };

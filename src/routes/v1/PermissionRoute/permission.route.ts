@@ -30,21 +30,21 @@ router.post(
 // Get user permissions
 router.get(
   "/user/:userId",
-  requirePermission(Permission.MANAGE_USERS),
+  requirePermission(Permission.MANAGE_EMPLOYEES),
   permissionController.getUserPermissions
 );
 
 // Get all available permissions
 router.get(
   "/all",
-  requirePermission(Permission.MANAGE_USERS),
+  requirePermission(Permission.MANAGE_EMPLOYEES),
   permissionController.getAllPermissions
 );
 
 // Check if user has specific permission
 router.get(
   "/check/:userId/:permission",
-  requirePermission(Permission.MANAGE_USERS),
+  requirePermission(Permission.MANAGE_EMPLOYEES),
   permissionController.checkPermission
 );
 

@@ -5,9 +5,9 @@ import {
   requirePermission,
 } from "../../../middlewares/permission";
 import { Permission } from "@prisma/client";
-import { userController } from "../../../controllers";
+import { employeeController } from "../../../controllers";
 import { validate } from "../../../middlewares/validate";
-import { userValidation } from "../../../validations";
+import { employeeValidation } from "../../../validations";
 
 const router = express.Router();
 
@@ -17,45 +17,45 @@ router.use(loadUserPermissions);
 
 router
   .route("/")
-  .get(requirePermission(Permission.READ_USER), userController.getUsers);
+  .get(requirePermission(Permission.READ_EMPLOYEE), employeeController.getEmployees);
 
 // Admin-only routes for managing HR and Employees
 router
-  .route("/hr")
+  .route("/hrs")
   .post(
-    requirePermission(Permission.CREATE_USER),
-    validate(userValidation.createHRUser.body),
-    userController.createHRUser
+    requirePermission(Permission.CREATE_EMPLOYEE),
+    validate(employeeValidation.createHREmployee.body),
+    employeeController.createHREmployee
   );
 
 router
-  .route("/employee")
+  .route("/employees")
   .post(
-    requirePermission(Permission.CREATE_USER),
-    validate(userValidation.createEmployeeUser.body),
-    userController.createEmployeeUser
+    requirePermission(Permission.CREATE_EMPLOYEE),
+    validate(employeeValidation.createEmployeeEmployee.body),
+    employeeController.createEmployee
   );
 
 router
-  .route("/:userId")
-  .get(requirePermission(Permission.READ_USER), userController.getUser)
-  .patch(requirePermission(Permission.UPDATE_USER), userController.updateUser)
-  .delete(requirePermission(Permission.DELETE_USER), userController.deleteUser);
+  .route("/:employeeId")
+  .get(requirePermission(Permission.READ_EMPLOYEE), employeeController.getEmployee)
+  .patch(requirePermission(Permission.UPDATE_EMPLOYEE), employeeController.updateEmployee)
+  .delete(requirePermission(Permission.DELETE_EMPLOYEE), employeeController.deleteEmployee);
 
 export default router;
 
 /**
  * @openapi
- * /users:
+ * /employees:
  *   get:
- *     summary: Get all users
+ *     summary: Get all employees
  *     tags:
- *       - Users
+ *       - Employees
  *     security:
  *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: List of users
+ *         description: List of employees
  *         content:
  *           application/json:
  *             schema:
@@ -66,15 +66,15 @@ export default router;
  *                   example: true
  *                 message:
  *                   type: string
- *                   example: Users retrieved successfully
+ *                   example: Employees retrieved successfully
  *                 data:
  *                   type: array
  *                   items:
- *                     $ref: '#/components/schemas/User'
+ *                     $ref: '#/components/schemas/Employee'
  *   post:
- *     summary: Create a new user (not exposed, use /hr or /employee)
+ *     summary: Create a new employee (not exposed, use /hr or /employee)
  *     tags:
- *       - Users
+ *       - Employees
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -106,7 +106,7 @@ export default router;
  *                 example: EMPLOYEE
  *     responses:
  *       201:
- *         description: User created
+ *         description: Employee created
  *         content:
  *           application/json:
  *             schema:
@@ -117,9 +117,9 @@ export default router;
  *                   example: true
  *                 message:
  *                   type: string
- *                   example: User created successfully
+ *                   example: Employee created successfully
  *                 data:
- *                   $ref: '#/components/schemas/User'
+ *                   $ref: '#/components/schemas/Employee'
  *       400:
  *         description: Validation error
  *         content:
@@ -127,11 +127,11 @@ export default router;
  *             schema:
  *               $ref: '#/components/schemas/Error'
  *
- * /users/hr:
+ * /employees/hr:
  *   post:
- *     summary: Create a new HR user
+ *     summary: Create a new HR employee
  *     tags:
- *       - Users
+ *       - Employees
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -162,7 +162,7 @@ export default router;
  *                 example: BR-001
  *     responses:
  *       201:
- *         description: HR user created
+ *         description: HR employee created
  *         content:
  *           application/json:
  *             schema:
@@ -173,9 +173,9 @@ export default router;
  *                   example: true
  *                 message:
  *                   type: string
- *                   example: HR user created successfully
+ *                   example: HR employee created successfully
  *                 data:
- *                   $ref: '#/components/schemas/User'
+ *                   $ref: '#/components/schemas/Employee'
  *       400:
  *         description: Validation error
  *         content:
@@ -183,11 +183,11 @@ export default router;
  *             schema:
  *               $ref: '#/components/schemas/Error'
  *
- * /users/employee:
+ * /employees/employee:
  *   post:
  *     summary: Create a new employee user
  *     tags:
- *       - Users
+ *       - Employees
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -231,7 +231,7 @@ export default router;
  *                   type: string
  *                   example: Employee user created successfully
  *                 data:
- *                   $ref: '#/components/schemas/User'
+ *                   $ref: '#/components/schemas/Employee'
  *       400:
  *         description: Validation error
  *         content:
@@ -239,22 +239,22 @@ export default router;
  *             schema:
  *               $ref: '#/components/schemas/Error'
  *
- * /users/{userId}:
+ * /employees/{employeeId}:
  *   get:
- *     summary: Get user by ID
+ *     summary: Get employee by ID
  *     tags:
- *       - Users
+ *       - Employees
  *     security:
  *       - bearerAuth: []
  *     parameters:
  *       - in: path
- *         name: userId
+ *         name: employeeId
  *         required: true
  *         schema:
  *           type: string
  *     responses:
  *       200:
- *         description: User found
+ *         description: Employee found
  *         content:
  *           application/json:
  *             schema:
@@ -265,24 +265,24 @@ export default router;
  *                   example: true
  *                 message:
  *                   type: string
- *                   example: User found
+ *                   example: Employee found
  *                 data:
- *                   $ref: '#/components/schemas/User'
+ *                   $ref: '#/components/schemas/Employee'
  *       404:
- *         description: User not found
+ *         description: Employee not found
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
  *   patch:
- *     summary: Update user by ID
+ *     summary: Update employee by ID
  *     tags:
- *       - Users
+ *       - Employees
  *     security:
  *       - bearerAuth: []
  *     parameters:
  *       - in: path
- *         name: userId
+ *         name: employeeId
  *         required: true
  *         schema:
  *           type: string
@@ -302,7 +302,7 @@ export default router;
  *                 example: NewStrongPassw0rd!
  *     responses:
  *       200:
- *         description: User updated
+ *         description: Employee updated
  *         content:
  *           application/json:
  *             schema:
@@ -313,9 +313,9 @@ export default router;
  *                   example: true
  *                 message:
  *                   type: string
- *                   example: User updated successfully
+ *                   example: Employee updated successfully
  *                 data:
- *                   $ref: '#/components/schemas/User'
+ *                   $ref: '#/components/schemas/Employee'
  *       400:
  *         description: Validation error
  *         content:
@@ -323,28 +323,28 @@ export default router;
  *             schema:
  *               $ref: '#/components/schemas/Error'
  *       404:
- *         description: User not found
+ *         description: Employee not found
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
  *   delete:
- *     summary: Delete user by ID
+ *     summary: Delete employee by ID
  *     tags:
- *       - Users
+ *       - Employees
  *     security:
  *       - bearerAuth: []
  *     parameters:
  *       - in: path
- *         name: userId
+ *         name: employeeId
  *         required: true
  *         schema:
  *           type: string
  *     responses:
  *       204:
- *         description: User deleted
+ *         description: Employee deleted
  *       404:
- *         description: User not found
+ *         description: Employee not found
  *         content:
  *           application/json:
  *             schema:

@@ -3,15 +3,15 @@ import { Permission } from "@prisma/client";
 
 declare global {
   namespace Express {
-    interface User {
+    interface Employee {
       id: string;
       email: string;
       name?: string;
       role: string;
     }
     interface Request {
-      user?: User;
-      userPermissions?: Permission[];
+      employee?: Employee;
+      employeePermissions?: Permission[];
     }
   }
 }

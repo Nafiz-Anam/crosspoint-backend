@@ -11,17 +11,17 @@ export const loadUserPermissions = async (
   next: NextFunction
 ) => {
   try {
-    if (!req.user?.id) {
+    if (!req.employee?.id) {
       return next(new ApiError(httpStatus.UNAUTHORIZED, "Please authenticate"));
     }
 
     // Get user permissions from database
     const userPermissions = await prisma.userPermission.findMany({
-      where: { userId: req.user.id },
+      where: { employeeId: req.employee.id },
       select: { permission: true },
     });
 
-    req.userPermissions = userPermissions.map((up) => up.permission);
+    req.employeePermissions = userPermissions.map((up) => up.permission);
     next();
   } catch (error) {
     next(
@@ -36,13 +36,13 @@ export const loadUserPermissions = async (
 // Middleware to check if user has specific permission
 export const requirePermission = (requiredPermission: Permission) => {
   return (req: Request, res: Response, next: NextFunction) => {
-    if (!req.userPermissions) {
+    if (!req.employeePermissions) {
       return next(
         new ApiError(httpStatus.UNAUTHORIZED, "Permissions not loaded")
       );
     }
 
-    if (!req.userPermissions.includes(requiredPermission)) {
+    if (!req.employeePermissions.includes(requiredPermission)) {
       return next(
         new ApiError(httpStatus.FORBIDDEN, "Insufficient permissions")
       );
@@ -55,14 +55,14 @@ export const requirePermission = (requiredPermission: Permission) => {
 // Middleware to check if user has any of the required permissions
 export const requireAnyPermission = (requiredPermissions: Permission[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
-    if (!req.userPermissions) {
+    if (!req.employeePermissions) {
       return next(
         new ApiError(httpStatus.UNAUTHORIZED, "Permissions not loaded")
       );
     }
 
     const hasPermission = requiredPermissions.some((permission) =>
-      req.userPermissions!.includes(permission)
+      req.employeePermissions!.includes(permission)
     );
 
     if (!hasPermission) {
@@ -78,14 +78,14 @@ export const requireAnyPermission = (requiredPermissions: Permission[]) => {
 // Middleware to check if user has all required permissions
 export const requireAllPermissions = (requiredPermissions: Permission[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
-    if (!req.userPermissions) {
+    if (!req.employeePermissions) {
       return next(
         new ApiError(httpStatus.UNAUTHORIZED, "Permissions not loaded")
       );
     }
 
     const hasAllPermissions = requiredPermissions.every((permission) =>
-      req.userPermissions!.includes(permission)
+      req.employeePermissions!.includes(permission)
     );
 
     if (!hasAllPermissions) {

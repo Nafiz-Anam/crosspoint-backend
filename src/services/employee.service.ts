@@ -4,23 +4,23 @@ import prisma from "../client";
 import ApiError from "../utils/ApiError";
 import { encryptPassword } from "../utils/encryption";
 
-type User = Prisma.UserGetPayload<Record<string, never>>;
-type Role = Prisma.UserCreateInput["role"];
+type Employee = Prisma.EmployeeGetPayload<Record<string, never>>;
+type Role = Prisma.EmployeeCreateInput["role"];
 
 /**
- * Create a user
- * @param {Object} userBody
- * @returns {Promise<User>}
+ * Create an employee
+ * @param {Object} employeeBody
+ * @returns {Promise<Employee>}
  */
-const createUser = async (
+const createEmployee = async (
   email: string,
   password: string,
   name?: string,
   role: Role = "EMPLOYEE",
   branchId?: string,
   employeeId?: string
-): Promise<User> => {
-  if (await getUserByEmail(email)) {
+): Promise<Employee> => {
+  if (await getEmployeeByEmail(email)) {
     throw new ApiError(httpStatus.BAD_REQUEST, "Email already taken");
   }
 
@@ -36,15 +36,15 @@ const createUser = async (
 
   // If employeeId is provided, check if it's unique
   if (employeeId) {
-    const existingUser = await prisma.user.findUnique({
+    const existingEmployee = await prisma.employee.findUnique({
       where: { employeeId },
     });
-    if (existingUser) {
+    if (existingEmployee) {
       throw new ApiError(httpStatus.BAD_REQUEST, "Employee ID already taken");
     }
   }
 
-  return prisma.user.create({
+  return prisma.employee.create({
     data: {
       email,
       name,
@@ -57,7 +57,7 @@ const createUser = async (
 };
 
 /**
- * Query for users
+ * Query for employees
  * @param {Object} filter - Prisma filter
  * @param {Object} options - Query options
  * @param {string} [options.sortBy] - Sort option in the format: sortField:(desc|asc)
@@ -65,7 +65,7 @@ const createUser = async (
  * @param {number} [options.page] - Current page (default = 1)
  * @returns {Promise<QueryResult>}
  */
-const queryUsers = async <Key extends keyof User>(
+const queryEmployees = async <Key extends keyof Employee>(
   filter: object,
   options: {
     limit?: number;
@@ -83,28 +83,28 @@ const queryUsers = async <Key extends keyof User>(
     "createdAt",
     "updatedAt",
   ] as Key[]
-): Promise<Pick<User, Key>[]> => {
+): Promise<Pick<Employee, Key>[]> => {
   const page = options.page ?? 1;
   const limit = options.limit ?? 10;
   const sortBy = options.sortBy;
   const sortType = options.sortType ?? "desc";
-  const users = await prisma.user.findMany({
+  const employees = await prisma.employee.findMany({
     where: filter,
     select: keys.reduce((obj, k) => ({ ...obj, [k]: true }), {}),
     skip: (page - 1) * limit,
     take: limit,
     orderBy: sortBy ? { [sortBy]: sortType } : undefined,
   });
-  return users as Pick<User, Key>[];
+  return employees as Pick<Employee, Key>[];
 };
 
 /**
- * Get user by id
+ * Get employee by id
  * @param {ObjectId} id
  * @param {Array<Key>} keys
- * @returns {Promise<Pick<User, Key> | null>}
+ * @returns {Promise<Pick<Employee, Key> | null>}
  */
-const getUserById = async <Key extends keyof User>(
+const getEmployeeById = async <Key extends keyof Employee>(
   id: string,
   keys: Key[] = [
     "id",
@@ -116,20 +116,20 @@ const getUserById = async <Key extends keyof User>(
     "createdAt",
     "updatedAt",
   ] as Key[]
-): Promise<Pick<User, Key> | null> => {
-  return prisma.user.findUnique({
+): Promise<Pick<Employee, Key> | null> => {
+  return prisma.employee.findUnique({
     where: { id },
     select: keys.reduce((obj, k) => ({ ...obj, [k]: true }), {}),
-  }) as Promise<Pick<User, Key> | null>;
+  }) as Promise<Pick<Employee, Key> | null>;
 };
 
 /**
- * Get user by email
+ * Get employee by email
  * @param {string} email
  * @param {Array<Key>} keys
- * @returns {Promise<Pick<User, Key> | null>}
+ * @returns {Promise<Pick<Employee, Key> | null>}
  */
-const getUserByEmail = async <Key extends keyof User>(
+const getEmployeeByEmail = async <Key extends keyof Employee>(
   email: string,
   keys: Key[] = [
     "id",
@@ -141,58 +141,58 @@ const getUserByEmail = async <Key extends keyof User>(
     "createdAt",
     "updatedAt",
   ] as Key[]
-): Promise<Pick<User, Key> | null> => {
-  return prisma.user.findUnique({
+): Promise<Pick<Employee, Key> | null> => {
+  return prisma.employee.findUnique({
     where: { email },
     select: keys.reduce((obj, k) => ({ ...obj, [k]: true }), {}),
-  }) as Promise<Pick<User, Key> | null>;
+  }) as Promise<Pick<Employee, Key> | null>;
 };
 
 /**
- * Update user by id
- * @param {ObjectId} userId
+ * Update employee by id
+ * @param {ObjectId} employeeId
  * @param {Object} updateBody
- * @returns {Promise<User>}
+ * @returns {Promise<Employee>}
  */
-const updateUserById = async <Key extends keyof User>(
-  userId: string,
-  updateBody: Prisma.UserUpdateInput,
+const updateEmployeeById = async <Key extends keyof Employee>(
+  employeeId: string,
+  updateBody: Prisma.EmployeeUpdateInput,
   keys: Key[] = ["id", "email", "name", "role"] as Key[]
-): Promise<Pick<User, Key> | null> => {
-  const user = await getUserById(userId, ["id", "email", "name"]);
-  if (!user) {
-    throw new ApiError(httpStatus.NOT_FOUND, "User not found");
+): Promise<Pick<Employee, Key> | null> => {
+  const employee = await getEmployeeById(employeeId, ["id", "email", "name"]);
+  if (!employee) {
+    throw new ApiError(httpStatus.NOT_FOUND, "Employee not found");
   }
-  if (updateBody.email && (await getUserByEmail(updateBody.email as string))) {
+  if (updateBody.email && (await getEmployeeByEmail(updateBody.email as string))) {
     throw new ApiError(httpStatus.BAD_REQUEST, "Email already taken");
   }
-  const updatedUser = await prisma.user.update({
-    where: { id: user.id },
+  const updatedEmployee = await prisma.employee.update({
+    where: { id: employee.id },
     data: updateBody,
     select: keys.reduce((obj, k) => ({ ...obj, [k]: true }), {}),
   });
-  return updatedUser as Pick<User, Key> | null;
+  return updatedEmployee as Pick<Employee, Key> | null;
 };
 
 /**
- * Delete user by id
- * @param {ObjectId} userId
- * @returns {Promise<User>}
+ * Delete employee by id
+ * @param {ObjectId} employeeId
+ * @returns {Promise<Employee>}
  */
-const deleteUserById = async (userId: string): Promise<User> => {
-  const user = await getUserById(userId);
-  if (!user) {
-    throw new ApiError(httpStatus.NOT_FOUND, "User not found");
+const deleteEmployeeById = async (employeeId: string): Promise<Employee> => {
+  const employee = await getEmployeeById(employeeId);
+  if (!employee) {
+    throw new ApiError(httpStatus.NOT_FOUND, "Employee not found");
   }
-  await prisma.user.delete({ where: { id: user.id } });
-  return user;
+  await prisma.employee.delete({ where: { id: employee.id } });
+  return employee;
 };
 
 export default {
-  createUser,
-  queryUsers,
-  getUserById,
-  getUserByEmail,
-  updateUserById,
-  deleteUserById,
+  createEmployee,
+  queryEmployees,
+  getEmployeeById,
+  getEmployeeByEmail,
+  updateEmployeeById,
+  deleteEmployeeById,
 };

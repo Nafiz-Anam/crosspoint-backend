@@ -62,7 +62,7 @@ router
 router
   .route("/user/:userId")
   .get(
-    validate(attendanceValidation.getUserAttendance),
+    validate(attendanceValidation.getEmployeeAttendance),
     attendanceController.getUserAttendance
   )
   .post(
@@ -73,14 +73,14 @@ router
 router
   .route("/user/:userId/range")
   .get(
-    validate(attendanceValidation.getUserAttendanceRange),
+    validate(attendanceValidation.getEmployeeAttendanceRange),
     attendanceController.getUserAttendanceRange
   );
 
 router
   .route("/user/:userId/stats")
   .get(
-    validate(attendanceValidation.getUserAttendanceStats),
+    validate(attendanceValidation.getEmployeeAttendanceStats),
     attendanceController.getUserAttendanceStats
   );
 

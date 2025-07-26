@@ -1,6 +1,6 @@
 import express from "express";
 import authRoute from "./AuthRoute/auth.route";
-import userRoute from "./UserRoute/user.route";
+import employeeRoute from "./EmployeeRoute/employee.route";
 import permissionRoute from "./PermissionRoute/permission.route";
 import serviceRoute from "./ServiceRoute/service.route";
 import clientRoute from "./ClientRoute/client.route";
@@ -16,8 +16,8 @@ const defaultRoutes = [
     route: authRoute,
   },
   {
-    path: "/users",
-    route: userRoute,
+    path: "/employee",
+    route: employeeRoute,
   },
   {
     path: "/permissions",

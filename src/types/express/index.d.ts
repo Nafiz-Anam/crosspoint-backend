@@ -1,12 +1,12 @@
 declare global {
   namespace Express {
-    interface User {
+    interface Employee {
       id: string;
       // Add other properties as needed
     }
     interface Request {
-      user?: User;
-      userPermissions?: string[];
+      employee?: Employee;
+      employeePermissions?: string[];
     }
   }
 }

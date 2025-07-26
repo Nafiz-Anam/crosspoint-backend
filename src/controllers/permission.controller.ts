@@ -87,7 +87,7 @@ const revokePermissions = catchAsync(async (req, res) => {
 const getUserPermissions = catchAsync(async (req, res) => {
   const { userId } = req.params;
 
-  const permissions = await permissionService.getUserPermissions(userId);
+  const permissions = await permissionService.getEmployeePermissions(userId);
 
   sendResponse(
     res,

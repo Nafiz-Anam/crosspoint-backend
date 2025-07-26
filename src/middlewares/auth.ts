@@ -15,7 +15,7 @@ const verifyCallback =
         new ApiError(httpStatus.UNAUTHORIZED, "Please authenticate")
       );
     }
-    req.user = user;
+    req.employee = user;
     resolve();
   };
 

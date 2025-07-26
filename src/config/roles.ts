@@ -4,7 +4,6 @@ import { Role, Permission } from "@prisma/client";
 const allRoles = {
   [Role.ADMIN]: [
     // User Management
-    Permission.MANAGE_USERS,
     Permission.ASSIGN_PERMISSIONS,
 
     // All CRUD operations
@@ -24,9 +23,12 @@ const allRoles = {
     Permission.VIEW_REPORTS,
   ],
   [Role.HR]: [
-    // User Management
-    Permission.MANAGE_USERS,
-    Permission.ASSIGN_PERMISSIONS,
+    // Employee Management
+    Permission.CREATE_EMPLOYEE,
+    Permission.READ_EMPLOYEE,
+    Permission.UPDATE_EMPLOYEE,
+    Permission.DELETE_EMPLOYEE,
+    Permission.MANAGE_EMPLOYEES,
 
     // All CRUD operations
     Permission.CREATE_CLIENT,

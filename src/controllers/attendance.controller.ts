@@ -6,11 +6,11 @@ import { AttendanceStatus } from "@prisma/client";
 
 const checkIn = catchAsync(async (req, res) => {
   const { notes } = req.body;
-  const userId = req.user?.id;
-  if (!userId) {
+  const employeeId = req.employee?.id;
+  if (!employeeId) {
     throw new ApiError(httpStatus.UNAUTHORIZED, "User not authenticated");
   }
-  const attendance = await attendanceService.checkIn(userId, notes);
+  const attendance = await attendanceService.checkIn(employeeId, notes);
   res.status(httpStatus.OK).json({
     success: true,
     message: "Check-in successful",
@@ -20,11 +20,11 @@ const checkIn = catchAsync(async (req, res) => {
 
 const checkOut = catchAsync(async (req, res) => {
   const { notes } = req.body;
-  const userId = req.user?.id;
-  if (!userId) {
+  const employeeId = req.employee?.id;
+  if (!employeeId) {
     throw new ApiError(httpStatus.UNAUTHORIZED, "User not authenticated");
   }
-  const attendance = await attendanceService.checkOut(userId, notes);
+  const attendance = await attendanceService.checkOut(employeeId, notes);
   res.status(httpStatus.OK).json({
     success: true,
     message: "Check-out successful",
@@ -33,14 +33,14 @@ const checkOut = catchAsync(async (req, res) => {
 });
 
 const getMyAttendance = catchAsync(async (req, res) => {
-  const userId = req.user?.id;
+  const employeeId = req.employee?.id;
   const { date } = req.query;
-  if (!userId) {
+  if (!employeeId) {
     throw new ApiError(httpStatus.UNAUTHORIZED, "User not authenticated");
   }
   const targetDate = date ? new Date(date as string) : new Date();
   const attendance = await attendanceService.getAttendanceByDate(
-    userId,
+    employeeId,
     targetDate
   );
   res.status(httpStatus.OK).json({
@@ -51,9 +51,9 @@ const getMyAttendance = catchAsync(async (req, res) => {
 });
 
 const getMyAttendanceRange = catchAsync(async (req, res) => {
-  const userId = req.user?.id;
+  const employeeId = req.employee?.id;
   const { startDate, endDate } = req.query;
-  if (!userId) {
+  if (!employeeId) {
     throw new ApiError(httpStatus.UNAUTHORIZED, "User not authenticated");
   }
   if (!startDate || !endDate) {
@@ -65,7 +65,7 @@ const getMyAttendanceRange = catchAsync(async (req, res) => {
   const start = new Date(startDate as string);
   const end = new Date(endDate as string);
   const attendances = await attendanceService.getAttendanceByDateRange(
-    userId,
+    employeeId,
     start,
     end
   );
@@ -77,9 +77,9 @@ const getMyAttendanceRange = catchAsync(async (req, res) => {
 });
 
 const getMyAttendanceStats = catchAsync(async (req, res) => {
-  const userId = req.user?.id;
+  const employeeId = req.employee?.id;
   const { startDate, endDate } = req.query;
-  if (!userId) {
+  if (!employeeId) {
     throw new ApiError(httpStatus.UNAUTHORIZED, "User not authenticated");
   }
   if (!startDate || !endDate) {
@@ -91,7 +91,7 @@ const getMyAttendanceStats = catchAsync(async (req, res) => {
   const start = new Date(startDate as string);
   const end = new Date(endDate as string);
   const stats = await attendanceService.getUserAttendanceStats(
-    userId,
+    employeeId,
     start,
     end
   );

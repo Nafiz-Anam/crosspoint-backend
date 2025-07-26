@@ -5,7 +5,7 @@ import { StatusCodes } from "http-status-codes";
 const prisma = new PrismaClient();
 
 const checkIn = async (userId: string, notes?: string): Promise<Attendance> => {
-  const user = await prisma.user.findUnique({
+  const user = await prisma.employee.findUnique({
     where: { id: userId },
   });
 
@@ -23,8 +23,8 @@ const checkIn = async (userId: string, notes?: string): Promise<Attendance> => {
   // Check if attendance record already exists for today
   const existingAttendance = await prisma.attendance.findUnique({
     where: {
-      userId_date: {
-        userId,
+      employeeId_date: {
+        employeeId: userId,
         date: today,
       },
     },
@@ -55,7 +55,7 @@ const checkIn = async (userId: string, notes?: string): Promise<Attendance> => {
         notes: notes || existingAttendance.notes,
       },
       include: {
-        user: {
+        employee: {
           select: {
             id: true,
             employeeId: true,
@@ -71,14 +71,14 @@ const checkIn = async (userId: string, notes?: string): Promise<Attendance> => {
     // Create new attendance record
     const newAttendance = await prisma.attendance.create({
       data: {
-        userId,
+        employeeId: userId,
         date: today,
         checkIn: now,
         status,
         notes,
       },
       include: {
-        user: {
+        employee: {
           select: {
             id: true,
             employeeId: true,
@@ -97,7 +97,7 @@ const checkOut = async (
   userId: string,
   notes?: string
 ): Promise<Attendance> => {
-  const user = await prisma.user.findUnique({
+  const user = await prisma.employee.findUnique({
     where: { id: userId },
   });
 
@@ -110,8 +110,8 @@ const checkOut = async (
 
   const attendance = await prisma.attendance.findUnique({
     where: {
-      userId_date: {
-        userId,
+      employeeId_date: {
+        employeeId: userId,
         date: today,
       },
     },
@@ -151,7 +151,7 @@ const checkOut = async (
       notes: notes || attendance.notes,
     },
     include: {
-      user: {
+      employee: {
         select: {
           id: true,
           employeeId: true,
@@ -174,13 +174,13 @@ const getAttendanceByDate = async (
 
   return prisma.attendance.findUnique({
     where: {
-      userId_date: {
-        userId,
+      employeeId_date: {
+        employeeId: userId,
         date: targetDate,
       },
     },
     include: {
-      user: {
+      employee: {
         select: {
           id: true,
           employeeId: true,
@@ -205,7 +205,7 @@ const getAttendanceByDateRange = async (
 
   return prisma.attendance.findMany({
     where: {
-      userId,
+      employeeId: userId,
       date: {
         gte: start,
         lte: end,
@@ -213,7 +213,7 @@ const getAttendanceByDateRange = async (
     },
     orderBy: { date: "desc" },
     include: {
-      user: {
+      employee: {
         select: {
           id: true,
           employeeId: true,
@@ -238,7 +238,7 @@ const getBranchAttendanceByDateRange = async (
 
   return prisma.attendance.findMany({
     where: {
-      user: {
+      employee: {
         branchId,
       },
       date: {
@@ -246,9 +246,9 @@ const getBranchAttendanceByDateRange = async (
         lte: end,
       },
     },
-    orderBy: [{ date: "desc" }, { user: { name: "asc" } }],
+    orderBy: [{ date: "desc" }, { employee: { name: "asc" } }],
     include: {
-      user: {
+      employee: {
         select: {
           id: true,
           employeeId: true,
@@ -275,14 +275,14 @@ const getTodayAttendanceByBranch = async (
 
   return prisma.attendance.findMany({
     where: {
-      user: {
+      employee: {
         branchId,
       },
       date: today,
     },
-    orderBy: { user: { name: "asc" } },
+    orderBy: { employee: { name: "asc" } },
     include: {
-      user: {
+      employee: {
         select: {
           id: true,
           employeeId: true,
@@ -309,7 +309,7 @@ const markAttendance = async (
   checkOut?: Date,
   notes?: string
 ): Promise<Attendance> => {
-  const user = await prisma.user.findUnique({
+  const user = await prisma.employee.findUnique({
     where: { id: userId },
   });
 
@@ -329,8 +329,8 @@ const markAttendance = async (
 
   const existingAttendance = await prisma.attendance.findUnique({
     where: {
-      userId_date: {
-        userId,
+      employeeId_date: {
+        employeeId: userId,
         date: targetDate,
       },
     },
@@ -348,7 +348,7 @@ const markAttendance = async (
         notes,
       },
       include: {
-        user: {
+        employee: {
           select: {
             id: true,
             employeeId: true,
@@ -362,7 +362,7 @@ const markAttendance = async (
     // Create new record
     return prisma.attendance.create({
       data: {
-        userId,
+        employeeId: userId,
         date: targetDate,
         checkIn,
         checkOut,
@@ -371,7 +371,7 @@ const markAttendance = async (
         notes,
       },
       include: {
-        user: {
+          employee: {
           select: {
             id: true,
             employeeId: true,
@@ -449,13 +449,13 @@ const getBranchAttendanceStats = async (
 
   const attendances = await prisma.attendance.findMany({
     where: {
-      user: {
+      employee: {
         branchId,
       },
       date: today,
     },
     include: {
-      user: {
+      employee: {
         select: {
           id: true,
           employeeId: true,

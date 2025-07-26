@@ -58,6 +58,14 @@ router.post("/verify-email", authController.verifyEmail);
  *               confirm_password:
  *                 type: string
  *                 example: StrongPassw0rd!
+ *     parameters:
+ *       - in: header
+ *         name: x-client-type
+ *         schema:
+ *           type: string
+ *           enum: [web, mobile]
+ *         required: true
+ *         description: Client type (must be "web" or "mobile")
  *     responses:
  *       201:
  *         description: User registered
@@ -109,6 +117,14 @@ router.post("/verify-email", authController.verifyEmail);
  *               password:
  *                 type: string
  *                 example: StrongPassw0rd!
+ *     parameters:
+ *       - in: header
+ *         name: x-client-type
+ *         schema:
+ *           type: string
+ *           enum: [web, mobile]
+ *         required: true
+ *         description: Client type (must be "web" or "mobile")
  *     responses:
  *       200:
  *         description: Login successful

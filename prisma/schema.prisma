@@ -29,14 +29,14 @@ model Branch {
   updatedAt  DateTime @updatedAt
 
   // Relations
-  users    User[]
+  employees    Employee[]
   clients  Client[]
   invoices Invoice[]
 
   @@map("branches")
 }
 
-model User {
+model Employee {
   id              String           @id @default(uuid())
   employeeId      String?          @unique // Format: EMP-BR001-001, EMP-BR002-001, etc.
   email           String           @unique
@@ -50,7 +50,7 @@ model User {
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
   Token           Token[]
-  UserPermissions UserPermission[]
+  EmployeePermissions UserPermission[] @relation("EmployeePermissions")
   attendances     Attendance[]
 
   @@map("users")
@@ -58,8 +58,8 @@ model User {
 
 model Attendance {
   id         String           @id @default(uuid())
-  userId     String
-  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  employeeId     String
+  employee       Employee             @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   date       DateTime         @default(now()) // Date of attendance
   checkIn    DateTime? // Check-in timestamp
   checkOut   DateTime? // Check-out timestamp
@@ -69,19 +69,19 @@ model Attendance {
   createdAt  DateTime         @default(now())
   updatedAt  DateTime         @updatedAt
 
-  @@unique([userId, date]) // One attendance record per user per day
+  @@unique([employeeId, date]) // One attendance record per user per day
   @@map("attendances")
 }
 
 model UserPermission {
   id         String     @id @default(uuid())
-  userId     String
-  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  employeeId     String
+  employee       Employee       @relation(fields: [employeeId], references: [id], onDelete: Cascade, name: "EmployeePermissions")
   permission Permission
   createdAt  DateTime   @default(now())
   updatedAt  DateTime   @updatedAt
 
-  @@unique([userId, permission])
+  @@unique([employeeId, permission])
 }
 
 model Client {
@@ -154,8 +154,8 @@ model Token {
   expires     DateTime
   blacklisted Boolean
   createdAt   DateTime  @default(now())
-  user        User      @relation(fields: [userId], references: [id])
-  userId      String
+  employee        Employee      @relation(fields: [employeeId], references: [id])
+  employeeId      String
 }
 
 enum Role {
@@ -195,11 +195,11 @@ enum Permission {
   VIEW_REPORTS
 
   // User Management
-  CREATE_USER
-  READ_USER
-  UPDATE_USER
-  DELETE_USER
-  MANAGE_USERS
+  CREATE_EMPLOYEE
+  READ_EMPLOYEE
+  UPDATE_EMPLOYEE
+  DELETE_EMPLOYEE
+  MANAGE_EMPLOYEES
   ASSIGN_PERMISSIONS
 }
 

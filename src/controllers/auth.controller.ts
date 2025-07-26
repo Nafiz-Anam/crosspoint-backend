@@ -2,24 +2,24 @@ import httpStatus from "http-status";
 import catchAsync from "../utils/catchAsync";
 import {
   authService,
-  userService,
+  employeeService,
   tokenService,
   emailService,
 } from "../services";
 import exclude from "../utils/exclude";
-import { User } from "@prisma/client";
 import sendResponse from "../utils/responseHandler";
+import { Employee } from "@prisma/client";
 
 const register = catchAsync(async (req, res) => {
   const clientType = req.headers["x-client-type"];
   const { email, password } = req.body;
-  const user = await userService.createUser(email, password);
-  const userWithoutPassword = exclude(user, [
+  const employee = await employeeService.createEmployee(email, password);
+  const userWithoutPassword = exclude(employee, [
     "password",
     "createdAt",
     "updatedAt",
   ]);
-  const tokens = await tokenService.generateAuthTokens(user);
+  const tokens = await tokenService.generateAuthTokens(employee);
 
   if (!tokens.refresh) {
     return sendResponse(
@@ -69,7 +69,7 @@ const register = catchAsync(async (req, res) => {
 const login = catchAsync(async (req, res) => {
   const clientType = req.headers["x-client-type"];
   const { email, password } = req.body;
-  const user = await authService.loginUserWithEmailAndPassword(email, password);
+  const user = await authService.loginEmployeeWithEmailAndPassword(email, password);
   const tokens = await tokenService.generateAuthTokens(user);
 
   if (!tokens.refresh) {
@@ -172,9 +172,9 @@ const resetPassword = catchAsync(async (req, res) => {
 });
 
 const sendVerificationEmail = catchAsync(async (req, res) => {
-  const user = req.user as User;
-  const verifyEmailToken = await tokenService.generateVerifyEmailToken(user);
-  await emailService.sendVerificationEmail(user.email, verifyEmailToken);
+  const employee = req.employee as Employee;
+  const verifyEmailToken = await tokenService.generateVerifyEmailToken(employee);
+  await emailService.sendVerificationEmail(employee.email, verifyEmailToken);
   res.status(httpStatus.NO_CONTENT).send();
 });
 

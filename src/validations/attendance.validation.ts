@@ -96,9 +96,9 @@ export const attendanceValidation = {
 
   markAttendance: Joi.object().keys({
     params: Joi.object().keys({
-      userId: Joi.string().custom(objectId).required().messages({
-        "string.empty": "User ID is required",
-        "any.invalid": "User ID must be a valid MongoDB ObjectId",
+      employeeId: Joi.string().custom(objectId).required().messages({
+        "string.empty": "Employee ID is required",
+        "any.invalid": "Employee ID must be a valid MongoDB ObjectId",
       }),
     }),
     body: Joi.object().keys({
@@ -127,25 +127,18 @@ export const attendanceValidation = {
     }),
   }),
 
-  getUserAttendance: Joi.object().keys({
-    params: Joi.object().keys({
-      userId: Joi.string().custom(objectId).required().messages({
-        "string.empty": "User ID is required",
-        "any.invalid": "User ID must be a valid MongoDB ObjectId",
-      }),
-    }),
-    query: Joi.object().keys({
-      date: Joi.date().optional().messages({
-        "date.base": "Date must be a valid date",
-      }),
+  getEmployeeAttendance: Joi.object().keys({
+    employeeId: Joi.string().custom(objectId).required().messages({
+      "string.empty": "Employee ID is required",
+      "any.invalid": "Employee ID must be a valid MongoDB ObjectId",
     }),
   }),
 
-  getUserAttendanceRange: Joi.object().keys({
+  getEmployeeAttendanceRange: Joi.object().keys({
     params: Joi.object().keys({
-      userId: Joi.string().custom(objectId).required().messages({
-        "string.empty": "User ID is required",
-        "any.invalid": "User ID must be a valid MongoDB ObjectId",
+      employeeId: Joi.string().custom(objectId).required().messages({
+        "string.empty": "Employee ID is required",
+        "any.invalid": "Employee ID must be a valid MongoDB ObjectId",
       }),
     }),
     query: Joi.object().keys({
@@ -160,11 +153,11 @@ export const attendanceValidation = {
     }),
   }),
 
-  getUserAttendanceStats: Joi.object().keys({
+  getEmployeeAttendanceStats: Joi.object().keys({
     params: Joi.object().keys({
-      userId: Joi.string().custom(objectId).required().messages({
-        "string.empty": "User ID is required",
-        "any.invalid": "User ID must be a valid MongoDB ObjectId",
+      employeeId: Joi.string().custom(objectId).required().messages({
+        "string.empty": "Employee ID is required",
+        "any.invalid": "Employee ID must be a valid MongoDB ObjectId",
       }),
     }),
     query: Joi.object().keys({

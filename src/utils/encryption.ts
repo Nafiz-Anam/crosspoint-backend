@@ -7,7 +7,7 @@ export const encryptPassword = async (password: string) => {
 
 export const isPasswordMatch = async (
     password: string,
-    userPassword: string
+    employeePassword: string
 ) => {
-    return bcrypt.compare(password, userPassword);
+    return bcrypt.compare(password, employeePassword);
 };
