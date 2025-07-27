@@ -95,7 +95,7 @@ const login = catchAsync(async (req, res) => {
       res,
       httpStatus.OK,
       true,
-      { user, accessToken: tokens.access.token },
+      { user, accessToken: tokens.access },
       "User logged in successfully"
     );
   } else if (clientType === "mobile") {
