@@ -28,7 +28,10 @@ const loginEmployeeWithEmailAndPassword = async (
     "createdAt",
     "updatedAt",
   ]);
-  if (!employee || !(await isPasswordMatch(password, employee.password as string))) {
+  if (
+    !employee ||
+    !(await isPasswordMatch(password, employee.password as string))
+  ) {
     throw new ApiError(httpStatus.UNAUTHORIZED, "Incorrect email or password");
   }
   return exclude(employee, ["password"]) as any;
@@ -89,12 +92,16 @@ const resetPassword = async (
       resetPasswordToken,
       TokenType.RESET_PASSWORD
     );
-    const employee = await employeeService.getEmployeeById(resetPasswordTokenData.employeeId);
+    const employee = await employeeService.getEmployeeById(
+      resetPasswordTokenData.employeeId
+    );
     if (!employee) {
       throw new Error();
     }
     const encryptedPassword = await encryptPassword(newPassword);
-    await employeeService.updateEmployeeById(employee.id, { password: encryptedPassword });
+    await employeeService.updateEmployeeById(employee.id, {
+      password: encryptedPassword,
+    });
     await prisma.token.deleteMany({
       where: { employeeId: employee.id, type: TokenType.RESET_PASSWORD },
     });

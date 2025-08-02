@@ -17,7 +17,10 @@ router.use(loadUserPermissions);
 
 router
   .route("/")
-  .get(requirePermission(Permission.READ_EMPLOYEE), employeeController.getEmployees);
+  .get(
+    requirePermission(Permission.READ_EMPLOYEE),
+    employeeController.getEmployees
+  );
 
 // Admin-only routes for managing HR and Employees
 router
@@ -38,9 +41,18 @@ router
 
 router
   .route("/:employeeId")
-  .get(requirePermission(Permission.READ_EMPLOYEE), employeeController.getEmployee)
-  .patch(requirePermission(Permission.UPDATE_EMPLOYEE), employeeController.updateEmployee)
-  .delete(requirePermission(Permission.DELETE_EMPLOYEE), employeeController.deleteEmployee);
+  .get(
+    requirePermission(Permission.READ_EMPLOYEE),
+    employeeController.getEmployee
+  )
+  .patch(
+    requirePermission(Permission.UPDATE_EMPLOYEE),
+    employeeController.updateEmployee
+  )
+  .delete(
+    requirePermission(Permission.DELETE_EMPLOYEE),
+    employeeController.deleteEmployee
+  );
 
 export default router;
 

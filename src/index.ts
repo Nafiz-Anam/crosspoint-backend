@@ -1,4 +1,4 @@
-/// <reference path="./types/express/index.d.ts" />
+/// <reference path="./types/express.d.ts" />
 import { Server } from "http";
 import app from "./app/app";
 import prisma from "./client"; // Prisma client for database operations
