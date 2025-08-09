@@ -37,21 +37,21 @@ model Branch {
 }
 
 model Employee {
-  id                  String           @id @default(uuid())
-  employeeId          String?          @unique // Format: EMP-BR001-001, EMP-BR002-001, etc.
-  email               String           @unique
-  name                String?
-  password            String
-  role                Role             @default(EMPLOYEE)
-  branchId            String?
-  branch              Branch?          @relation(fields: [branchId], references: [id])
-  isEmailVerified     Boolean          @default(false)
-  isActive            Boolean          @default(true)
-  createdAt           DateTime         @default(now())
-  updatedAt           DateTime         @updatedAt
-  Token               Token[]
-  EmployeePermissions UserPermission[] @relation("EmployeePermissions")
-  attendances         Attendance[]
+  id              String       @id @default(uuid())
+  employeeId      String?      @unique // Format: EMP-BR001-001, EMP-BR002-001, etc.
+  email           String       @unique
+  name            String?
+  password        String
+  role            Role         @default(EMPLOYEE)
+  branchId        String?
+  branch          Branch?      @relation(fields: [branchId], references: [id])
+  isEmailVerified Boolean      @default(false)
+  isActive        Boolean      @default(true)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  Token           Token[] // Relation with Token model
+  attendances     Attendance[] // Relation with Attendance model
+  permissions     Permission[] // Array of permissions (no relation needed)
 
   @@map("employees")
 }
@@ -71,17 +71,6 @@ model Attendance {
 
   @@unique([employeeId, date]) // One attendance record per user per day
   @@map("attendances")
-}
-
-model UserPermission {
-  id         String     @id @default(uuid())
-  employeeId String
-  employee   Employee   @relation(fields: [employeeId], references: [id], onDelete: Cascade, name: "EmployeePermissions")
-  permission Permission
-  createdAt  DateTime   @default(now())
-  updatedAt  DateTime   @updatedAt
-
-  @@unique([employeeId, permission])
 }
 
 model Client {
@@ -164,6 +153,7 @@ enum Role {
   ADMIN
   HR
   EMPLOYEE
+  MANAGER
 }
 
 enum TokenType {

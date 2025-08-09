@@ -1,5 +1,3 @@
-// src/config/passport.ts (or wherever your jwtStrategy is defined)
-
 import prisma from "../client";
 import {
   Strategy as JwtStrategy,
@@ -25,19 +23,14 @@ const jwtVerify: VerifyCallback = async (payload, done) => {
       return done(null, false, { message: "Invalid token type" });
     }
 
-    // Fetch the employee and their associated permissions
+    // Fetch the employee and their associated permissions using the new schema
     const employee = await prisma.employee.findUnique({
       select: {
         id: true,
         email: true,
         name: true,
         role: true,
-        // Include the EmployeePermissions relation and select the permission string
-        EmployeePermissions: {
-          select: {
-            permission: true, // Select the actual permission string
-          },
-        },
+        permissions: true, // Directly fetch the permissions from the Employee model
       },
       where: { id: payload.sub },
     });
@@ -47,18 +40,13 @@ const jwtVerify: VerifyCallback = async (payload, done) => {
       return done(null, false, { message: "Employee not found" });
     }
 
-    // Extract just the permission strings into an array
-    const employeePermissions = employee.EmployeePermissions.map(
-      (ep) => ep.permission
-    );
-
     // Construct the authenticated employee object with permissions
     const authenticatedEmployee = {
       id: employee.id,
       email: employee.email,
       name: employee.name,
       role: employee.role,
-      employeePermissions: employeePermissions, // Attach the permissions array here
+      employeePermissions: employee.permissions, // Attach the permissions array directly
     };
 
     done(null, authenticatedEmployee); // Pass the employee with permissions

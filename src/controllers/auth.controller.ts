@@ -13,7 +13,7 @@ import { Employee } from "@prisma/client";
 const register = catchAsync(async (req, res) => {
   const clientType = req.headers["x-client-type"];
   const { email, password } = req.body;
-  const employee = await employeeService.createEmployee(email, password);
+  const employee = await employeeService.registerEmployee(email, password);
   const userWithoutPassword = exclude(employee, [
     "password",
     "createdAt",
@@ -69,7 +69,10 @@ const register = catchAsync(async (req, res) => {
 const login = catchAsync(async (req, res) => {
   const clientType = req.headers["x-client-type"];
   const { email, password } = req.body;
-  const user = await authService.loginEmployeeWithEmailAndPassword(email, password);
+  const user = await authService.loginEmployeeWithEmailAndPassword(
+    email,
+    password
+  );
   const tokens = await tokenService.generateAuthTokens(user);
 
   if (!tokens.refresh) {
@@ -173,7 +176,9 @@ const resetPassword = catchAsync(async (req, res) => {
 
 const sendVerificationEmail = catchAsync(async (req, res) => {
   const employee = req.employee as Employee;
-  const verifyEmailToken = await tokenService.generateVerifyEmailToken(employee);
+  const verifyEmailToken = await tokenService.generateVerifyEmailToken(
+    employee
+  );
   await emailService.sendVerificationEmail(employee.email, verifyEmailToken);
   res.status(httpStatus.NO_CONTENT).send();
 });

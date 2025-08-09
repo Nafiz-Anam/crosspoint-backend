@@ -17,26 +17,14 @@ router.use(loadUserPermissions);
 
 router
   .route("/")
+  .post(
+    requirePermission(Permission.CREATE_EMPLOYEE),
+    validate(employeeValidation.createEmployee.body),
+    employeeController.createEmployee
+  )
   .get(
     requirePermission(Permission.READ_EMPLOYEE),
     employeeController.getEmployees
-  );
-
-// Admin-only routes for managing HR and Employees
-router
-  .route("/hrs")
-  .post(
-    requirePermission(Permission.CREATE_EMPLOYEE),
-    validate(employeeValidation.createHREmployee.body),
-    employeeController.createHREmployee
-  );
-
-router
-  .route("/employees")
-  .post(
-    requirePermission(Permission.CREATE_EMPLOYEE),
-    validate(employeeValidation.createEmployeeEmployee.body),
-    employeeController.createEmployee
   );
 
 router

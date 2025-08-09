@@ -1,59 +1,98 @@
-import { Prisma } from "@prisma/client";
+import { Employee, Permission, Prisma, Role } from "@prisma/client";
 import httpStatus from "http-status";
 import prisma from "../client";
 import ApiError from "../utils/ApiError";
 import { encryptPassword } from "../utils/encryption";
+import { branchService } from "../services";
 
-type Employee = Prisma.EmployeeGetPayload<Record<string, never>>;
-type Role = Prisma.EmployeeCreateInput["role"];
+const registerEmployee = async (email: string, password: string) => {
+  // Check if email already exists
+  if (await prisma.employee.findUnique({ where: { email } })) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Email already taken");
+  }
+
+  // Create basic employee with just email and password
+  const employee = await prisma.employee.create({
+    data: {
+      email,
+      password: await encryptPassword(password),
+    },
+  });
+
+  return employee;
+};
 
 /**
  * Create an employee
  * @param {Object} employeeBody
  * @returns {Promise<Employee>}
  */
-const createEmployee = async (
-  email: string,
-  password: string,
-  name?: string,
-  role: Role = "EMPLOYEE",
-  branchId?: string,
-  employeeId?: string
-): Promise<Employee> => {
-  if (await getEmployeeByEmail(email)) {
+const createEmployee = async ({
+  email,
+  password,
+  name,
+  role = Role.EMPLOYEE,
+  branchId,
+  isActive = true,
+  permissions = [],
+}: {
+  email: string;
+  password: string;
+  name: string;
+  role?: Role;
+  branchId?: string;
+  isActive?: boolean;
+  permissions?: Permission[];
+}): Promise<
+  Prisma.EmployeeGetPayload<{
+    include: {
+      branch: true;
+    };
+  }>
+> => {
+  // Check if email already exists
+  if (await prisma.employee.findUnique({ where: { email } })) {
     throw new ApiError(httpStatus.BAD_REQUEST, "Email already taken");
   }
 
-  // If branchId is provided, validate it exists
-  if (branchId) {
-    const branch = await prisma.branch.findUnique({
-      where: { id: branchId },
-    });
-    if (!branch) {
+  // Validate branch exists if required
+  if (role !== Role.ADMIN) {
+    if (!branchId) {
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        "Branch is required for this role"
+      );
+    }
+
+    if (!(await prisma.branch.findUnique({ where: { id: branchId } }))) {
       throw new ApiError(httpStatus.BAD_REQUEST, "Branch not found");
     }
   }
 
-  // If employeeId is provided, check if it's unique
-  if (employeeId) {
-    const existingEmployee = await prisma.employee.findUnique({
-      where: { employeeId },
-    });
-    if (existingEmployee) {
-      throw new ApiError(httpStatus.BAD_REQUEST, "Employee ID already taken");
-    }
+  // Generate employee ID (only for non-admin roles)
+  let employeeId: string | undefined;
+  if (branchId) {
+    employeeId = await branchService.generateEmployeeId(branchId);
   }
 
-  return prisma.employee.create({
+  // Create employee with permissions (stored as enum array)
+  const employee = await prisma.employee.create({
     data: {
       email,
       name,
       password: await encryptPassword(password),
       role,
       branchId,
+      isActive,
       employeeId,
+      permissions: permissions, // Directly assign enum array
+    },
+    include: {
+      branch: true,
     },
   });
+
+  return employee;
 };
 
 /**
@@ -75,11 +114,13 @@ const queryEmployees = async <Key extends keyof Employee>(
   },
   keys: Key[] = [
     "id",
-    "email",
+    "employeeId",
     "name",
-    "password",
+    "email",
+    "branchId",
     "role",
-    "isEmailVerified",
+    "isActive",
+    "permissions",
     "createdAt",
     "updatedAt",
   ] as Key[]
@@ -163,7 +204,10 @@ const updateEmployeeById = async <Key extends keyof Employee>(
   if (!employee) {
     throw new ApiError(httpStatus.NOT_FOUND, "Employee not found");
   }
-  if (updateBody.email && (await getEmployeeByEmail(updateBody.email as string))) {
+  if (
+    updateBody.email &&
+    (await getEmployeeByEmail(updateBody.email as string))
+  ) {
     throw new ApiError(httpStatus.BAD_REQUEST, "Email already taken");
   }
   const updatedEmployee = await prisma.employee.update({
@@ -195,4 +239,5 @@ export default {
   getEmployeeByEmail,
   updateEmployeeById,
   deleteEmployeeById,
+  registerEmployee,
 };

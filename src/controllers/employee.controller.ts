@@ -5,8 +5,19 @@ import catchAsync from "../utils/catchAsync";
 import { employeeService } from "../services";
 
 const createEmployee = catchAsync(async (req, res) => {
-  const { email, password, name, role } = req.body;
-  const employee = await employeeService.createEmployee(email, password, name, role);
+  const { email, password, name, role, branchId, isActive, permissions } =
+    req.body;
+
+  const employee = await employeeService.createEmployee({
+    email,
+    password,
+    name,
+    role,
+    branchId,
+    isActive,
+    permissions,
+  });
+
   res.status(httpStatus.CREATED).send(employee);
 });
 
@@ -26,38 +37,16 @@ const getEmployee = catchAsync(async (req, res) => {
 });
 
 const updateEmployee = catchAsync(async (req, res) => {
-  const employee = await employeeService.updateEmployeeById(req.params.employeeId, req.body);
+  const employee = await employeeService.updateEmployeeById(
+    req.params.employeeId,
+    req.body
+  );
   res.send(employee);
 });
 
 const deleteEmployee = catchAsync(async (req, res) => {
   await employeeService.deleteEmployeeById(req.params.employeeId);
   res.status(httpStatus.NO_CONTENT).send();
-});
-
-// Role-specific user creation methods
-const createHREmployee = catchAsync(async (req, res) => {
-  const { email, password, name, branchId } = req.body;
-  const employee = await employeeService.createEmployee(
-    email,
-    password,
-    name,
-    "HR",
-    branchId
-  );
-  res.status(httpStatus.CREATED).send(employee);
-});
-
-const createEmployeeUser = catchAsync(async (req, res) => {
-  const { email, password, name, branchId } = req.body;
-  const employee = await employeeService.createEmployee(
-    email,
-    password,
-    name,
-    "EMPLOYEE",
-    branchId
-  );
-  res.status(httpStatus.CREATED).send(employee);
 });
 
 const getHREmployees = catchAsync(async (req, res) => {
@@ -80,8 +69,6 @@ export default {
   getEmployee,
   updateEmployee,
   deleteEmployee,
-  createHREmployee,
-  createEmployeeUser,
   getHREmployees,
   getEmployeesList,
 };

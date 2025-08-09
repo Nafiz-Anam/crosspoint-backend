@@ -7,14 +7,24 @@ const createEmployee = {
     email: Joi.string().required().email(),
     password: Joi.string().required().custom(password),
     name: Joi.string().required(),
-    role: Joi.string().required().valid(Role.ADMIN, Role.HR, Role.EMPLOYEE),
+    role: Joi.string()
+      .required()
+      .valid(Role.ADMIN, Role.HR, Role.MANAGER, Role.EMPLOYEE),
+    branchId: Joi.string().when("role", {
+      is: Joi.not(Role.ADMIN),
+      then: Joi.required(),
+      otherwise: Joi.optional(),
+    }),
+    isActive: Joi.boolean().default(true),
+    permissions: Joi.array().items(Joi.string()).min(1).required(),
   }),
 };
 
 const getEmployees = {
   query: Joi.object().keys({
     name: Joi.string(),
-    role: Joi.string(),
+    role: Joi.string().valid(Role.ADMIN, Role.HR, Role.MANAGER, Role.EMPLOYEE),
+    isActive: Joi.boolean(),
     sortBy: Joi.string(),
     limit: Joi.number().integer(),
     page: Joi.number().integer(),
@@ -23,44 +33,35 @@ const getEmployees = {
 
 const getEmployee = {
   params: Joi.object().keys({
-    employeeId: Joi.number().integer(),
+    employeeId: Joi.string().required(),
   }),
 };
 
 const updateEmployee = {
   params: Joi.object().keys({
-    employeeId: Joi.number().integer(),
+    employeeId: Joi.string().required(),
   }),
   body: Joi.object()
     .keys({
       email: Joi.string().email(),
       password: Joi.string().custom(password),
       name: Joi.string(),
+      role: Joi.string().valid(
+        Role.ADMIN,
+        Role.HR,
+        Role.MANAGER,
+        Role.EMPLOYEE
+      ),
+      branchId: Joi.string(),
+      isActive: Joi.boolean(),
+      permissions: Joi.array().items(Joi.string()),
     })
     .min(1),
 };
 
 const deleteEmployee = {
   params: Joi.object().keys({
-    employeeId: Joi.number().integer(),
-  }),
-};
-
-const createHREmployee = {
-  body: Joi.object().keys({
-    email: Joi.string().required().email(),
-    password: Joi.string().required().custom(password),
-    name: Joi.string().required(),
-    branchId: Joi.string().required(),
-  }),
-};
-
-const createEmployeeEmployee = {
-  body: Joi.object().keys({
-    email: Joi.string().required().email(),
-    password: Joi.string().required().custom(password),
-    name: Joi.string().required(),
-    branchId: Joi.string().required(),
+    employeeId: Joi.string().required(),
   }),
 };
 
@@ -70,6 +71,4 @@ export default {
   getEmployee,
   updateEmployee,
   deleteEmployee,
-  createHREmployee,
-  createEmployeeEmployee,
 };
