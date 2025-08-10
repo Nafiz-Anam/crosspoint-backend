@@ -72,7 +72,7 @@ const createClient = async (
     throw new ApiError(httpStatus.BAD_REQUEST, "Branch not found");
   }
 
-  const customerId = await generateCustomerId(branchId);
+  const clientId = await generateCustomerId(branchId);
 
   return prisma.client.create({
     data: {
@@ -85,7 +85,7 @@ const createClient = async (
       province: province?.toUpperCase(),
       serviceId,
       branchId,
-      customerId,
+      clientId,
     },
     include: {
       service: true,

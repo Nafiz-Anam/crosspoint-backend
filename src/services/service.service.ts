@@ -2,13 +2,14 @@ import { Service, Prisma } from "@prisma/client";
 import httpStatus from "http-status";
 import prisma from "../client";
 import ApiError from "../utils/ApiError";
+import branchService from "./branch.service";
 
 /**
  * Create a service
  * @param {Object} serviceBody
  * @returns {Promise<Service>}
  */
-const createService = async (name: string): Promise<Service> => {
+const createService = async (name: string, price: number): Promise<Service> => {
   // Check if service with same name already exists
   const existingService = await prisma.service.findFirst({
     where: { name },
@@ -21,8 +22,16 @@ const createService = async (name: string): Promise<Service> => {
     );
   }
 
+  // Generate a unique service ID
+  const serviceId = await branchService.generateServiceId(); // Generate the unique service ID
+
+  // Create the service
   return prisma.service.create({
-    data: { name },
+    data: {
+      serviceId: serviceId, // Assign the generated service ID
+      name,
+      price,
+    },
   });
 };
 

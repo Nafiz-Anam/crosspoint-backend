@@ -52,6 +52,7 @@ model Employee {
   Token           Token[] // Relation with Token model
   attendances     Attendance[] // Relation with Attendance model
   permissions     Permission[] // Array of permissions (no relation needed)
+  Client          Client[]
 
   @@map("employees")
 }
@@ -64,7 +65,7 @@ model Attendance {
   checkIn    DateTime? // Check-in timestamp
   checkOut   DateTime? // Check-out timestamp
   totalHours Float? // Total hours worked (calculated)
-  status     AttendanceStatus @default(PRESENT)
+  status     AttendanceStatus @default(ABSENT)
   notes      String? // Additional notes (late arrival, early departure, etc.)
   createdAt  DateTime         @default(now())
   updatedAt  DateTime         @updatedAt
@@ -73,37 +74,41 @@ model Attendance {
   @@map("attendances")
 }
 
-model Client {
-  id         String    @id @default(uuid())
-  customerId String?   @unique // Format: CUST-BR001-001, CUST-BR002-001, etc.
-  name       String
-  email      String    @unique
-  phone      String?
-  address    String?
-  city       String? // Italian city
-  postalCode String? // Italian postal code (CAP)
-  province   String? // Italian province (2-letter code)
-  serviceId  String
-  service    Service   @relation(fields: [serviceId], references: [id])
-  branchId   String
-  branch     Branch    @relation(fields: [branchId], references: [id])
-  isActive   Boolean   @default(true)
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-  invoices   Invoice[]
-
-  @@map("clients")
-}
-
 model Service {
   id           String        @id @default(uuid())
+  serviceId    String
   name         String
+  price        Float // Added price field
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   clients      Client[]
   invoiceItems InvoiceItem[]
 
   @@map("services")
+}
+
+model Client {
+  id                 String       @id @default(uuid())
+  clientId           String?      @unique // Format: CLT-BR001-001, CLT-BR002-001, etc.
+  name               String
+  email              String       @unique
+  phone              String?
+  address            String?
+  city               String? // Italian city
+  postalCode         String? // Italian postal code (CAP)
+  province           String? // Italian province (2-letter code)
+  serviceId          String
+  service            Service      @relation(fields: [serviceId], references: [id])
+  branchId           String
+  branch             Branch       @relation(fields: [branchId], references: [id])
+  assignedEmployeeId String?
+  assignedEmployee   Employee?    @relation(fields: [assignedEmployeeId], references: [id])
+  status             ClientStatus @default(PENDING)
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+  invoices           Invoice[]
+
+  @@map("clients")
 }
 
 model Invoice {
@@ -209,4 +214,11 @@ enum AttendanceStatus {
   HALF_DAY
   LEAVE
   HOLIDAY
+}
+
+enum ClientStatus {
+  PENDING
+  PROCESSING
+  CANCELLED
+  COMPLETED
 }

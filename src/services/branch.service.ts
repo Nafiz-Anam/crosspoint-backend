@@ -44,13 +44,13 @@ const generateCustomerId = async (branchId: string): Promise<string> => {
   }
   const branchCode = branch.branchId;
   const lastCustomer = await prisma.client.findFirst({
-    where: { customerId: { startsWith: `CUST-${branchCode}-` } },
-    orderBy: { customerId: "desc" },
+    where: { clientId: { startsWith: `CLT-${branchCode}-` } },
+    orderBy: { clientId: "desc" },
   });
   if (!lastCustomer) {
     return `CUST-${branchCode}-001`;
   }
-  const lastNumber = parseInt(lastCustomer.customerId!.split("-")[2]);
+  const lastNumber = parseInt(lastCustomer.clientId!.split("-")[2]);
   const nextNumber = lastNumber + 1;
   return `CUST-${branchCode}-${nextNumber.toString().padStart(3, "0")}`;
 };
@@ -82,6 +82,19 @@ const generateInvoiceId = async (
   return `INV-${branchCode}-${dateCode}-${nextNumber
     .toString()
     .padStart(3, "0")}`;
+};
+
+// Generate a unique service ID
+const generateServiceId = async (): Promise<string> => {
+  const lastService = await prisma.service.findFirst({
+    orderBy: { id: "desc" },
+  });
+  if (!lastService) {
+    return "SRV-001";
+  }
+  const lastNumber = parseInt(lastService.id.split("-")[1]);
+  const nextNumber = lastNumber + 1;
+  return `SRV-${nextNumber.toString().padStart(3, "0")}`;
 };
 
 // Create a new branch
@@ -285,4 +298,5 @@ export default {
   deleteBranch,
   getBranchStatistics,
   getAllBranchesWithStatistics,
+  generateServiceId,
 };
