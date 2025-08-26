@@ -6,14 +6,31 @@ import { clientService } from "../services";
 import sendResponse from "../utils/responseHandler";
 
 const createClient = catchAsync(async (req, res) => {
-  const { name, email, serviceId, branchId, phone, address } = req.body;
-  const client = await clientService.createClient(
+  const {
     name,
     email,
     serviceId,
     branchId,
     phone,
-    address
+    address,
+    assignedEmployeeId,
+    city,
+    postalCode,
+    province,
+    status,
+  } = req.body;
+  const client = await clientService.createClient(
+    name,
+    email,
+    serviceId,
+    branchId,
+    assignedEmployeeId,
+    status,
+    phone,
+    address,
+    city,
+    postalCode,
+    province
   );
 
   sendResponse(

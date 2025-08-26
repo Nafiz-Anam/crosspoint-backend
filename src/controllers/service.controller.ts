@@ -27,7 +27,7 @@ const getServices = catchAsync(async (req, res) => {
     res,
     httpStatus.OK,
     true,
-    { services: result },
+    result,
     "Services retrieved successfully"
   );
 });

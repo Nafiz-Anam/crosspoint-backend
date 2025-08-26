@@ -25,7 +25,12 @@ const getEmployees = catchAsync(async (req, res) => {
   const filter = pick(req.query, ["name", "role"]);
   const options = pick(req.query, ["sortBy", "limit", "page"]);
   const result = await employeeService.queryEmployees(filter, options);
-  res.send(result);
+
+  res.status(httpStatus.OK).json({
+    success: true,
+    message: "Employee retrieved successfully",
+    data: result,
+  });
 });
 
 const getEmployee = catchAsync(async (req, res) => {

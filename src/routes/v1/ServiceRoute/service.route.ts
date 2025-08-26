@@ -27,7 +27,7 @@ router
 router
   .route("/:serviceId")
   .get(requirePermission(Permission.READ_SERVICE), serviceController.getService)
-  .patch(
+  .put(
     requirePermission(Permission.UPDATE_SERVICE),
     serviceController.updateService
   )

@@ -1,4 +1,4 @@
-import { Client, Prisma } from "@prisma/client";
+import { Client, ClientStatus, Prisma } from "@prisma/client";
 import httpStatus from "http-status";
 import prisma from "../client";
 import ApiError from "../utils/ApiError";
@@ -8,7 +8,7 @@ import ApiError from "../utils/ApiError";
  * @param {string} branchId
  * @returns {Promise<string>}
  */
-const generateCustomerId = async (branchId: string): Promise<string> => {
+const generateClientId = async (branchId: string): Promise<string> => {
   const branch = await prisma.branch.findUnique({
     where: { id: branchId },
   });
@@ -23,7 +23,7 @@ const generateCustomerId = async (branchId: string): Promise<string> => {
   });
 
   const sequence = String(clientCount + 1).padStart(3, "0");
-  return `CUST-${branch.branchId}-${sequence}`;
+  return `CLT-${branch.branchId}-${sequence}`;
 };
 
 /**
@@ -36,6 +36,8 @@ const createClient = async (
   email: string,
   serviceId: string,
   branchId: string,
+  assignedEmployeeId: string,
+  status: ClientStatus,
   phone?: string,
   address?: string,
   city?: string,
@@ -72,7 +74,7 @@ const createClient = async (
     throw new ApiError(httpStatus.BAD_REQUEST, "Branch not found");
   }
 
-  const clientId = await generateCustomerId(branchId);
+  const clientId = await generateClientId(branchId);
 
   return prisma.client.create({
     data: {
@@ -86,6 +88,8 @@ const createClient = async (
       serviceId,
       branchId,
       clientId,
+      assignedEmployeeId,
+      status,
     },
     include: {
       service: true,
@@ -124,6 +128,8 @@ const queryClients = async (
     orderBy: sortBy ? { [sortBy]: sortType } : undefined,
     include: {
       service: true,
+      branch: true,
+      assignedEmployee: true,
       _count: {
         select: {
           invoices: true,
