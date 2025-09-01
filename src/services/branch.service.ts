@@ -196,7 +196,7 @@ const getBranchStatistics = async (branchId: string) => {
     .reduce((sum, invoice) => sum + invoice.totalAmount, 0);
 
   const pendingInvoices = branch.invoices.filter(
-    (invoice) => invoice.status === "PENDING"
+    (invoice) => invoice.status === "UNPAID"
   );
   const overdueInvoices = branch.invoices.filter(
     (invoice) => invoice.status === "OVERDUE"
@@ -254,7 +254,7 @@ const getAllBranchesWithStatistics = async () => {
       .reduce((sum, invoice) => sum + invoice.totalAmount, 0);
 
     const pendingInvoices = branch.invoices.filter(
-      (invoice) => invoice.status === "PENDING"
+      (invoice) => invoice.status === "UNPAID"
     );
     const overdueInvoices = branch.invoices.filter(
       (invoice) => invoice.status === "OVERDUE"

@@ -6,14 +6,27 @@ const createInvoice = {
   body: Joi.object().keys({
     clientId: Joi.string().required().custom(objectId),
     branchId: Joi.string().required().custom(objectId),
+    employeeId: Joi.string().required().custom(objectId),
     invoiceNumber: Joi.string().optional(),
     dueDate: Joi.date().required(),
+    thanksMessage: Joi.string().required().min(1),
+    notes: Joi.string().optional(),
+    paymentTerms: Joi.string().optional(),
+    taxRate: Joi.number().optional().min(0).max(100),
+    discountAmount: Joi.number().optional().min(0),
+    paymentMethod: Joi.string().optional(),
+    bankName: Joi.string().optional(),
+    bankCountry: Joi.string().optional(),
+    bankIban: Joi.string().optional(),
+    bankSwiftCode: Joi.string().optional(),
     items: Joi.array()
       .items(
         Joi.object().keys({
           serviceId: Joi.string().required().custom(objectId),
-          quantity: Joi.number().required().min(1),
-          price: Joi.number().required().min(0),
+          description: Joi.string().required().min(1),
+          quantity: Joi.number().required().min(1).integer(),
+          rate: Joi.number().required().min(0),
+          discount: Joi.number().optional().min(0),
         })
       )
       .required()
@@ -25,48 +38,98 @@ const getInvoices = {
   query: Joi.object().keys({
     clientId: Joi.string().custom(objectId),
     branchId: Joi.string().custom(objectId),
+    employeeId: Joi.string().custom(objectId),
     status: Joi.string().valid(...Object.values(InvoiceStatus)),
+    invoiceNumber: Joi.string(),
+    invoiceId: Joi.string(),
     sortBy: Joi.string(),
-    limit: Joi.number().integer(),
-    page: Joi.number().integer(),
+    sortType: Joi.string().valid("asc", "desc"),
+    limit: Joi.number().integer().min(1).max(100),
+    page: Joi.number().integer().min(1),
   }),
 };
 
 const getInvoice = {
   params: Joi.object().keys({
-    invoiceId: Joi.string().custom(objectId),
+    invoiceId: Joi.string().required().custom(objectId),
   }),
 };
 
 const updateInvoice = {
   params: Joi.object().keys({
-    invoiceId: Joi.required().custom(objectId),
+    invoiceId: Joi.string().required().custom(objectId),
   }),
   body: Joi.object()
     .keys({
       clientId: Joi.string().custom(objectId),
       branchId: Joi.string().custom(objectId),
+      employeeId: Joi.string().custom(objectId),
       invoiceNumber: Joi.string(),
       dueDate: Joi.date(),
       status: Joi.string().valid(...Object.values(InvoiceStatus)),
+      notes: Joi.string().allow("", null),
+      thanksMessage: Joi.string().min(1),
+      paymentTerms: Joi.string().allow("", null),
+      taxRate: Joi.number().min(0).max(100),
+      discountAmount: Joi.number().min(0),
+      paymentMethod: Joi.string(),
+      bankName: Joi.string().allow("", null),
+      bankCountry: Joi.string().allow("", null),
+      bankIban: Joi.string().allow("", null),
+      bankSwiftCode: Joi.string().allow("", null),
     })
     .min(1),
 };
 
 const deleteInvoice = {
   params: Joi.object().keys({
-    invoiceId: Joi.string().custom(objectId),
+    invoiceId: Joi.string().required().custom(objectId),
   }),
 };
 
 const updateInvoiceStatus = {
   params: Joi.object().keys({
-    invoiceId: Joi.required().custom(objectId),
+    invoiceId: Joi.string().required().custom(objectId),
   }),
   body: Joi.object().keys({
     status: Joi.string()
       .required()
       .valid(...Object.values(InvoiceStatus)),
+  }),
+};
+
+const updateInvoiceItems = {
+  params: Joi.object().keys({
+    invoiceId: Joi.string().required().custom(objectId),
+  }),
+  body: Joi.object().keys({
+    items: Joi.array()
+      .items(
+        Joi.object().keys({
+          serviceId: Joi.string().required().custom(objectId),
+          description: Joi.string().required().min(1),
+          quantity: Joi.number().required().min(1).integer(),
+          rate: Joi.number().required().min(0),
+          discount: Joi.number().optional().min(0),
+        })
+      )
+      .required()
+      .min(1),
+    taxRate: Joi.number().optional().min(0).max(100),
+    discountAmount: Joi.number().optional().min(0),
+  }),
+};
+
+const getInvoiceStats = {
+  query: Joi.object().keys({
+    branchId: Joi.string().custom(objectId),
+    clientId: Joi.string().custom(objectId),
+    employeeId: Joi.string().custom(objectId),
+    startDate: Joi.date(),
+    endDate: Joi.date().when("startDate", {
+      is: Joi.exist(),
+      then: Joi.date().min(Joi.ref("startDate")),
+    }),
   }),
 };
 
@@ -77,4 +140,6 @@ export default {
   updateInvoice,
   deleteInvoice,
   updateInvoiceStatus,
+  updateInvoiceItems,
+  getInvoiceStats,
 };

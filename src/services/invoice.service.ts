@@ -1,22 +1,63 @@
-import { Invoice, InvoiceItem, Prisma, InvoiceStatus } from "@prisma/client";
+import { Invoice, Prisma, InvoiceStatus } from "@prisma/client";
 import httpStatus from "http-status";
 import prisma from "../client";
 import ApiError from "../utils/ApiError";
 
 interface InvoiceItemData {
   serviceId: string;
+  description: string;
   quantity: number;
-  price: number;
+  rate: number;
+  discount?: number;
 }
 
 interface CreateInvoiceData {
   clientId: string;
   branchId: string;
-  invoiceNumber: string;
+  employeeId: string; // Required field
+  invoiceNumber?: string;
   dueDate: Date;
   items: InvoiceItemData[];
   notes?: string;
+  thanksMessage: string; // Required field
+  paymentTerms?: string;
+  taxRate?: number;
+  discountAmount?: number;
+  paymentMethod?: string;
+  bankName?: string;
+  bankCountry?: string;
+  bankIban?: string;
+  bankSwiftCode?: string;
 }
+
+/**
+ * Calculate invoice totals including tax and discount
+ * @param {InvoiceItemData[]} items
+ * @param {number} taxRate - Tax rate as percentage (e.g., 10 for 10%)
+ * @param {number} discountAmount - Fixed discount amount
+ * @returns {object}
+ */
+const calculateInvoiceTotals = (
+  items: InvoiceItemData[],
+  taxRate: number = 0,
+  discountAmount: number = 0
+) => {
+  const subTotalAmount = items.reduce((total, item) => {
+    const discount = item.discount || 0;
+    const lineTotal = item.quantity * item.rate - discount;
+    return total + lineTotal;
+  }, 0);
+
+  const taxAmount = (subTotalAmount * taxRate) / 100;
+  const totalAmount = subTotalAmount + taxAmount - discountAmount;
+
+  return {
+    subTotalAmount,
+    taxAmount,
+    discountAmount,
+    totalAmount,
+  };
+};
 
 /**
  * Generate unique invoice ID for a branch with date
@@ -34,10 +75,9 @@ const generateInvoiceId = async (branchId: string): Promise<string> => {
 
   const date = new Date();
   const year = date.getFullYear();
-  const month = date.getMonth() + 1; // getMonth() returns 0-11
+  const month = date.getMonth() + 1;
   const day = date.getDate();
 
-  // Get count of invoices for this branch on this specific date
   const startOfDay = new Date(year, month - 1, day, 0, 0, 0);
   const endOfDay = new Date(year, month - 1, day, 23, 59, 59);
 
@@ -67,7 +107,6 @@ const generateInvoiceNumber = async (): Promise<string> => {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
 
-  // Get count of invoices for this month
   const startOfMonth = new Date(year, date.getMonth(), 1);
   const endOfMonth = new Date(year, date.getMonth() + 1, 0);
 
@@ -85,12 +124,18 @@ const generateInvoiceNumber = async (): Promise<string> => {
 };
 
 /**
- * Calculate total amount from invoice items
- * @param {InvoiceItemData[]} items
+ * Calculate individual item total
+ * @param {number} quantity
+ * @param {number} rate
+ * @param {number} discount
  * @returns {number}
  */
-const calculateTotalAmount = (items: InvoiceItemData[]): number => {
-  return items.reduce((total, item) => total + item.quantity * item.price, 0);
+const calculateItemTotal = (
+  quantity: number,
+  rate: number,
+  discount: number = 0
+): number => {
+  return quantity * rate - discount;
 };
 
 /**
@@ -119,6 +164,15 @@ const createInvoice = async (
     throw new ApiError(httpStatus.BAD_REQUEST, "Branch not found");
   }
 
+  // Check if employee exists
+  const employee = await prisma.employee.findUnique({
+    where: { id: invoiceData.employeeId },
+  });
+
+  if (!employee) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Employee not found");
+  }
+
   // Verify client belongs to the specified branch
   if (client.branchId !== invoiceData.branchId) {
     throw new ApiError(
@@ -141,7 +195,7 @@ const createInvoice = async (
     }
   }
 
-  // Validate invoice items
+  // Validate invoice items and services
   for (const item of invoiceData.items) {
     const service = await prisma.service.findUnique({
       where: { id: item.serviceId },
@@ -153,9 +207,32 @@ const createInvoice = async (
         `Service with ID ${item.serviceId} not found`
       );
     }
+
+    if (item.quantity <= 0) {
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        "Quantity must be greater than 0"
+      );
+    }
+
+    if (item.rate <= 0) {
+      throw new ApiError(httpStatus.BAD_REQUEST, "Rate must be greater than 0");
+    }
+
+    if (item.discount && item.discount < 0) {
+      throw new ApiError(httpStatus.BAD_REQUEST, "Discount cannot be negative");
+    }
   }
 
-  const totalAmount = calculateTotalAmount(invoiceData.items);
+  const taxRate = invoiceData.taxRate || 0;
+  const discountAmount = invoiceData.discountAmount || 0;
+
+  const { subTotalAmount, taxAmount, totalAmount } = calculateInvoiceTotals(
+    invoiceData.items,
+    taxRate,
+    discountAmount
+  );
+
   const invoiceNumber =
     invoiceData.invoiceNumber || (await generateInvoiceNumber());
   const invoiceId = await generateInvoiceId(invoiceData.branchId);
@@ -166,27 +243,44 @@ const createInvoice = async (
       data: {
         clientId: invoiceData.clientId,
         branchId: invoiceData.branchId,
+        employeeId: invoiceData.employeeId,
         invoiceNumber,
         invoiceId,
+        subTotalAmount,
+        discountAmount,
+        taxAmount,
+        taxRate,
         totalAmount,
         dueDate: invoiceData.dueDate,
-        status: InvoiceStatus.PENDING,
+        status: InvoiceStatus.UNPAID,
         notes: invoiceData.notes,
+        thanksMessage: invoiceData.thanksMessage,
+        paymentTerms: invoiceData.paymentTerms,
+        paymentMethod: invoiceData.paymentMethod || "Internet Banking",
+        bankName: invoiceData.bankName,
+        bankCountry: invoiceData.bankCountry,
+        bankIban: invoiceData.bankIban,
+        bankSwiftCode: invoiceData.bankSwiftCode,
       },
     });
 
-    // Create invoice items
+    // Create invoice items with calculated totals
     const invoiceItems = await Promise.all(
-      invoiceData.items.map((item) =>
-        tx.invoiceItem.create({
+      invoiceData.items.map((item) => {
+        const discount = item.discount || 0;
+        const total = calculateItemTotal(item.quantity, item.rate, discount);
+
+        return tx.invoiceItem.create({
           data: {
             invoiceId: newInvoice.id,
             serviceId: item.serviceId,
-            quantity: item.quantity,
-            price: item.price,
+            description: item.description,
+            rate: item.rate,
+            discount: discount,
+            total: total,
           },
-        })
-      )
+        });
+      })
     );
 
     return { ...newInvoice, items: invoiceItems };
@@ -221,11 +315,9 @@ const queryInvoices = async (
     take: limit,
     orderBy: sortBy ? { [sortBy]: sortType } : undefined,
     include: {
-      client: {
-        include: {
-          service: true,
-        },
-      },
+      client: true,
+      branch: true,
+      employee: true,
       items: {
         include: {
           service: true,
@@ -246,11 +338,9 @@ const getInvoiceById = async (id: string): Promise<Invoice | null> => {
   return prisma.invoice.findUnique({
     where: { id },
     include: {
-      client: {
-        include: {
-          service: true,
-        },
-      },
+      client: true,
+      branch: true,
+      employee: true,
       items: {
         include: {
           service: true,
@@ -299,17 +389,106 @@ const updateInvoiceById = async (
     where: { id: invoiceId },
     data: updateBody,
     include: {
-      client: {
-        include: {
-          service: true,
-        },
-      },
+      client: true,
+      branch: true,
+      employee: true,
       items: {
         include: {
           service: true,
         },
       },
     },
+  });
+
+  return updatedInvoice;
+};
+
+/**
+ * Update invoice items with recalculation
+ * @param {string} invoiceId
+ * @param {InvoiceItemData[]} items
+ * @param {number} taxRate
+ * @param {number} discountAmount
+ * @returns {Promise<Invoice | null>}
+ */
+const updateInvoiceItems = async (
+  invoiceId: string,
+  items: InvoiceItemData[],
+  taxRate: number = 0,
+  discountAmount: number = 0
+): Promise<Invoice | null> => {
+  const invoice = await getInvoiceById(invoiceId);
+  if (!invoice) {
+    throw new ApiError(httpStatus.NOT_FOUND, "Invoice not found");
+  }
+
+  // Validate all services exist
+  for (const item of items) {
+    const service = await prisma.service.findUnique({
+      where: { id: item.serviceId },
+    });
+
+    if (!service) {
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        `Service with ID ${item.serviceId} not found`
+      );
+    }
+  }
+
+  const { subTotalAmount, taxAmount, totalAmount } = calculateInvoiceTotals(
+    items,
+    taxRate,
+    discountAmount
+  );
+
+  // Update invoice and items in transaction
+  const updatedInvoice = await prisma.$transaction(async (tx) => {
+    // Delete existing items
+    await tx.invoiceItem.deleteMany({
+      where: { invoiceId },
+    });
+
+    // Create new items
+    await Promise.all(
+      items.map((item) => {
+        const discount = item.discount || 0;
+        const total = calculateItemTotal(item.quantity, item.rate, discount);
+
+        return tx.invoiceItem.create({
+          data: {
+            invoiceId,
+            serviceId: item.serviceId,
+            description: item.description,
+            rate: item.rate,
+            discount: discount,
+            total: total,
+          },
+        });
+      })
+    );
+
+    // Update invoice totals
+    return tx.invoice.update({
+      where: { id: invoiceId },
+      data: {
+        subTotalAmount,
+        discountAmount,
+        taxAmount,
+        taxRate,
+        totalAmount,
+      },
+      include: {
+        client: true,
+        branch: true,
+        employee: true,
+        items: {
+          include: {
+            service: true,
+          },
+        },
+      },
+    });
   });
 
   return updatedInvoice;
@@ -354,11 +533,9 @@ const updateInvoiceStatus = async (
     where: { id: invoiceId },
     data: { status },
     include: {
-      client: {
-        include: {
-          service: true,
-        },
-      },
+      client: true,
+      branch: true,
+      employee: true,
       items: {
         include: {
           service: true,
@@ -377,5 +554,8 @@ export default {
   updateInvoiceById,
   deleteInvoiceById,
   updateInvoiceStatus,
+  updateInvoiceItems,
   generateInvoiceNumber,
+  calculateItemTotal,
+  calculateInvoiceTotals,
 };

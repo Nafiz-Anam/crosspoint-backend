@@ -7,14 +7,68 @@ import { InvoiceStatus } from "@prisma/client";
 import sendResponse from "../utils/responseHandler";
 
 const createInvoice = catchAsync(async (req, res) => {
-  const { clientId, branchId, invoiceNumber, dueDate, items } = req.body;
+  const {
+    clientId,
+    branchId,
+    employeeId,
+    invoiceNumber,
+    dueDate,
+    items,
+    notes,
+    thanksMessage,
+    paymentTerms,
+    taxRate,
+    discountAmount,
+    paymentMethod,
+    bankName,
+    bankCountry,
+    bankIban,
+    bankSwiftCode,
+  } = req.body;
+
+  // Validate required fields
+  if (
+    !clientId ||
+    !branchId ||
+    !employeeId ||
+    !thanksMessage ||
+    !items ||
+    !Array.isArray(items) ||
+    items.length === 0
+  ) {
+    throw new ApiError(
+      httpStatus.BAD_REQUEST,
+      "Missing required fields: clientId, branchId, employeeId, thanksMessage, and items array"
+    );
+  }
+
+  // Validate each item has required fields
+  for (const item of items) {
+    if (!item.serviceId || !item.description || !item.quantity || !item.rate) {
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        "Each item must have serviceId, description, quantity, and rate"
+      );
+    }
+  }
 
   const invoice = await invoiceService.createInvoice({
     clientId,
     branchId,
+    employeeId,
     invoiceNumber,
     dueDate: new Date(dueDate),
     items,
+    notes,
+    thanksMessage,
+    paymentTerms,
+    taxRate: taxRate || 0,
+    discountAmount: discountAmount || 0,
+    paymentMethod,
+    bankName,
+    bankCountry,
+    bankIban,
+    bankSwiftCode,
   });
 
   sendResponse(
@@ -27,8 +81,29 @@ const createInvoice = catchAsync(async (req, res) => {
 });
 
 const getInvoices = catchAsync(async (req, res) => {
-  const filter = pick(req.query, ["clientId", "status", "invoiceNumber"]);
-  const options = pick(req.query, ["sortBy", "limit", "page"]);
+  const filter = pick(req.query, [
+    "clientId",
+    "branchId",
+    "employeeId",
+    "status",
+    "invoiceNumber",
+    "invoiceId",
+  ]);
+  const options = pick(req.query, ["sortBy", "sortType", "limit", "page"]);
+
+  // Convert string values to appropriate types for filter
+  if (filter.status && typeof filter.status === "string") {
+    // Validate status if provided
+    if (
+      !Object.values(InvoiceStatus).includes(filter.status as InvoiceStatus)
+    ) {
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        "Invalid invoice status filter"
+      );
+    }
+  }
+
   const result = await invoiceService.queryInvoices(filter, options);
 
   sendResponse(
@@ -41,7 +116,13 @@ const getInvoices = catchAsync(async (req, res) => {
 });
 
 const getInvoice = catchAsync(async (req, res) => {
-  const invoice = await invoiceService.getInvoiceById(req.params.invoiceId);
+  const { invoiceId } = req.params;
+
+  if (!invoiceId) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Invoice ID is required");
+  }
+
+  const invoice = await invoiceService.getInvoiceById(invoiceId);
   if (!invoice) {
     throw new ApiError(httpStatus.NOT_FOUND, "Invoice not found");
   }
@@ -56,10 +137,27 @@ const getInvoice = catchAsync(async (req, res) => {
 });
 
 const updateInvoice = catchAsync(async (req, res) => {
-  const invoice = await invoiceService.updateInvoiceById(
-    req.params.invoiceId,
-    req.body
-  );
+  const { invoiceId } = req.params;
+  const updateData = req.body;
+
+  if (!invoiceId) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Invoice ID is required");
+  }
+
+  // If dueDate is being updated, convert to Date
+  if (updateData.dueDate) {
+    updateData.dueDate = new Date(updateData.dueDate);
+  }
+
+  // Validate status if being updated
+  if (
+    updateData.status &&
+    !Object.values(InvoiceStatus).includes(updateData.status)
+  ) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Invalid invoice status");
+  }
+
+  const invoice = await invoiceService.updateInvoiceById(invoiceId, updateData);
 
   sendResponse(
     res,
@@ -70,24 +168,88 @@ const updateInvoice = catchAsync(async (req, res) => {
   );
 });
 
+const updateInvoiceItems = catchAsync(async (req, res) => {
+  const { invoiceId } = req.params;
+  const { items, taxRate, discountAmount } = req.body;
+
+  if (!invoiceId) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Invoice ID is required");
+  }
+
+  if (!items || !Array.isArray(items) || items.length === 0) {
+    throw new ApiError(
+      httpStatus.BAD_REQUEST,
+      "Items array is required and cannot be empty"
+    );
+  }
+
+  // Validate each item
+  for (const item of items) {
+    if (!item.serviceId || !item.description || !item.quantity || !item.rate) {
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        "Each item must have serviceId, description, quantity, and rate"
+      );
+    }
+
+    if (item.quantity <= 0 || item.rate <= 0) {
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        "Quantity and rate must be greater than 0"
+      );
+    }
+
+    if (item.discount && item.discount < 0) {
+      throw new ApiError(httpStatus.BAD_REQUEST, "Discount cannot be negative");
+    }
+  }
+
+  const invoice = await invoiceService.updateInvoiceItems(
+    invoiceId,
+    items,
+    taxRate || 0,
+    discountAmount || 0
+  );
+
+  sendResponse(
+    res,
+    httpStatus.OK,
+    true,
+    { invoice },
+    "Invoice items updated successfully"
+  );
+});
+
 const deleteInvoice = catchAsync(async (req, res) => {
-  await invoiceService.deleteInvoiceById(req.params.invoiceId);
+  const { invoiceId } = req.params;
+
+  if (!invoiceId) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Invoice ID is required");
+  }
+
+  await invoiceService.deleteInvoiceById(invoiceId);
 
   sendResponse(res, httpStatus.OK, true, null, "Invoice deleted successfully");
 });
 
 const updateInvoiceStatus = catchAsync(async (req, res) => {
+  const { invoiceId } = req.params;
   const { status } = req.body;
+
+  if (!invoiceId) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Invoice ID is required");
+  }
+
+  if (!status) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Status is required");
+  }
 
   // Validate status
   if (!Object.values(InvoiceStatus).includes(status)) {
     throw new ApiError(httpStatus.BAD_REQUEST, "Invalid invoice status");
   }
 
-  const invoice = await invoiceService.updateInvoiceStatus(
-    req.params.invoiceId,
-    status
-  );
+  const invoice = await invoiceService.updateInvoiceStatus(invoiceId, status);
 
   sendResponse(
     res,
@@ -110,12 +272,70 @@ const generateInvoiceNumber = catchAsync(async (req, res) => {
   );
 });
 
+const getInvoiceStats = catchAsync(async (req, res) => {
+  const { branchId, clientId, employeeId, startDate, endDate } = req.query;
+
+  let filter: any = {};
+
+  if (branchId) filter.branchId = branchId;
+  if (clientId) filter.clientId = clientId;
+  if (employeeId) filter.employeeId = employeeId;
+
+  if (startDate && endDate) {
+    filter.createdAt = {
+      gte: new Date(startDate as string),
+      lte: new Date(endDate as string),
+    };
+  }
+
+  const invoices = await invoiceService.queryInvoices(filter, { limit: 1000 });
+
+  const stats = {
+    totalInvoices: invoices.length,
+    totalAmount: invoices.reduce((sum, inv) => sum + inv.totalAmount, 0),
+    subTotalAmount: invoices.reduce((sum, inv) => sum + inv.subTotalAmount, 0),
+    taxAmount: invoices.reduce((sum, inv) => sum + inv.taxAmount, 0),
+    discountAmount: invoices.reduce((sum, inv) => sum + inv.discountAmount, 0),
+    paidInvoices: invoices.filter((inv) => inv.status === InvoiceStatus.PAID)
+      .length,
+    unpaidInvoices: invoices.filter(
+      (inv) => inv.status === InvoiceStatus.UNPAID
+    ).length,
+    overdueInvoices: invoices.filter(
+      (inv) =>
+        inv.status === InvoiceStatus.UNPAID &&
+        new Date(inv.dueDate) < new Date()
+    ).length,
+    statusBreakdown: {
+      [InvoiceStatus.PAID]: invoices.filter(
+        (inv) => inv.status === InvoiceStatus.PAID
+      ).length,
+      [InvoiceStatus.UNPAID]: invoices.filter(
+        (inv) => inv.status === InvoiceStatus.UNPAID
+      ).length,
+      [InvoiceStatus.OVERDUE]: invoices.filter(
+        (inv) => inv.status === InvoiceStatus.OVERDUE
+      ).length,
+    },
+  };
+
+  sendResponse(
+    res,
+    httpStatus.OK,
+    true,
+    { stats },
+    "Invoice statistics retrieved successfully"
+  );
+});
+
 export default {
   createInvoice,
   getInvoices,
   getInvoice,
   updateInvoice,
+  updateInvoiceItems,
   deleteInvoice,
   updateInvoiceStatus,
   generateInvoiceNumber,
+  getInvoiceStats,
 };

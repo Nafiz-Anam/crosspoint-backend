@@ -36,6 +36,14 @@ router
   );
 
 router
+  .route("/stats")
+  .get(
+    requirePermission(Permission.READ_INVOICE),
+    validate(invoiceValidation.getInvoiceStats.query),
+    invoiceController.getInvoiceStats
+  );
+
+router
   .route("/:invoiceId")
   .get(
     requirePermission(Permission.READ_INVOICE),
@@ -61,6 +69,14 @@ router
     invoiceController.updateInvoiceStatus
   );
 
+router
+  .route("/:invoiceId/items")
+  .patch(
+    requirePermission(Permission.UPDATE_INVOICE),
+    validate(invoiceValidation.updateInvoiceItems.body),
+    invoiceController.updateInvoiceItems
+  );
+
 export default router;
 
 /**
@@ -80,26 +96,90 @@ export default router;
  *             type: object
  *             required:
  *               - clientId
- *               - amount
+ *               - branchId
+ *               - employeeId
+ *               - thanksMessage
  *               - dueDate
+ *               - items
  *             properties:
  *               clientId:
  *                 type: string
- *                 example: CUST-BR001-001
- *               amount:
- *                 type: number
- *                 format: float
- *                 example: 1500.75
+ *                 example: "uuid-client-id"
+ *               branchId:
+ *                 type: string
+ *                 example: "uuid-branch-id"
+ *               employeeId:
+ *                 type: string
+ *                 example: "uuid-employee-id"
+ *               invoiceNumber:
+ *                 type: string
+ *                 example: "INV-202409-0001"
  *               dueDate:
  *                 type: string
  *                 format: date
  *                 example: "2024-12-31"
+ *               thanksMessage:
+ *                 type: string
+ *                 example: "Thank you for your business"
  *               notes:
  *                 type: string
- *                 example: "Payment for December services"
+ *                 example: "Payment for September services"
+ *               paymentTerms:
+ *                 type: string
+ *                 example: "Net 30 days"
+ *               taxRate:
+ *                 type: number
+ *                 format: float
+ *                 example: 10.5
+ *               discountAmount:
+ *                 type: number
+ *                 format: float
+ *                 example: 50.00
+ *               paymentMethod:
+ *                 type: string
+ *                 example: "Internet Banking"
+ *               bankName:
+ *                 type: string
+ *                 example: "City Bank"
+ *               bankCountry:
+ *                 type: string
+ *                 example: "USA"
+ *               bankIban:
+ *                 type: string
+ *                 example: "US29NWBK60161331926819"
+ *               bankSwiftCode:
+ *                 type: string
+ *                 example: "NWBKUS33"
+ *               items:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   required:
+ *                     - serviceId
+ *                     - description
+ *                     - quantity
+ *                     - rate
+ *                   properties:
+ *                     serviceId:
+ *                       type: string
+ *                       example: "uuid-service-id"
+ *                     description:
+ *                       type: string
+ *                       example: "Web Development Service"
+ *                     quantity:
+ *                       type: integer
+ *                       example: 2
+ *                     rate:
+ *                       type: number
+ *                       format: float
+ *                       example: 750.00
+ *                     discount:
+ *                       type: number
+ *                       format: float
+ *                       example: 50.00
  *     responses:
  *       201:
- *         description: Invoice created
+ *         description: Invoice created successfully
  *         content:
  *           application/json:
  *             schema:
@@ -112,22 +192,75 @@ export default router;
  *                   type: string
  *                   example: Invoice created successfully
  *                 data:
- *                   $ref: '#/components/schemas/Invoice'
- *       400:
- *         description: Validation error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
+ *                   type: object
+ *                   properties:
+ *                     invoice:
+ *                       $ref: '#/components/schemas/Invoice'
  *   get:
  *     summary: Get all invoices
  *     tags:
  *       - Invoices
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: clientId
+ *         schema:
+ *           type: string
+ *         description: Filter by client ID
+ *       - in: query
+ *         name: branchId
+ *         schema:
+ *           type: string
+ *         description: Filter by branch ID
+ *       - in: query
+ *         name: employeeId
+ *         schema:
+ *           type: string
+ *         description: Filter by employee ID
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [UNPAID, PAID, OVERDUE, CANCELLED]
+ *         description: Filter by invoice status
+ *       - in: query
+ *         name: invoiceNumber
+ *         schema:
+ *           type: string
+ *         description: Filter by invoice number
+ *       - in: query
+ *         name: invoiceId
+ *         schema:
+ *           type: string
+ *         description: Filter by invoice ID
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Number of results per page
+ *       - in: query
+ *         name: sortBy
+ *         schema:
+ *           type: string
+ *         description: Sort by field
+ *       - in: query
+ *         name: sortType
+ *         schema:
+ *           type: string
+ *           enum: [asc, desc]
+ *           default: desc
+ *         description: Sort order
  *     responses:
  *       200:
- *         description: List of invoices
+ *         description: List of invoices retrieved successfully
  *         content:
  *           application/json:
  *             schema:
@@ -140,9 +273,12 @@ export default router;
  *                   type: string
  *                   example: Invoices retrieved successfully
  *                 data:
- *                   type: array
- *                   items:
- *                     $ref: '#/components/schemas/Invoice'
+ *                   type: object
+ *                   properties:
+ *                     invoices:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/Invoice'
  *
  * /invoices/generate-number:
  *   get:
@@ -153,15 +289,120 @@ export default router;
  *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: Generated invoice number
+ *         description: Invoice number generated successfully
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
- *                 invoiceNumber:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
  *                   type: string
- *                   example: INV-BR001-20241225-001
+ *                   example: Invoice number generated successfully
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     invoiceNumber:
+ *                       type: string
+ *                       example: INV-202409-0001
+ *
+ * /invoices/stats:
+ *   get:
+ *     summary: Get invoice statistics
+ *     tags:
+ *       - Invoices
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: branchId
+ *         schema:
+ *           type: string
+ *         description: Filter stats by branch ID
+ *       - in: query
+ *         name: clientId
+ *         schema:
+ *           type: string
+ *         description: Filter stats by client ID
+ *       - in: query
+ *         name: employeeId
+ *         schema:
+ *           type: string
+ *         description: Filter stats by employee ID
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Start date for filtering (YYYY-MM-DD)
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: End date for filtering (YYYY-MM-DD)
+ *     responses:
+ *       200:
+ *         description: Invoice statistics retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Invoice statistics retrieved successfully
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     stats:
+ *                       type: object
+ *                       properties:
+ *                         totalInvoices:
+ *                           type: integer
+ *                           example: 150
+ *                         totalAmount:
+ *                           type: number
+ *                           format: float
+ *                           example: 125000.50
+ *                         subTotalAmount:
+ *                           type: number
+ *                           format: float
+ *                           example: 115000.00
+ *                         taxAmount:
+ *                           type: number
+ *                           format: float
+ *                           example: 11500.50
+ *                         discountAmount:
+ *                           type: number
+ *                           format: float
+ *                           example: 1500.00
+ *                         paidInvoices:
+ *                           type: integer
+ *                           example: 120
+ *                         unpaidInvoices:
+ *                           type: integer
+ *                           example: 25
+ *                         overdueInvoices:
+ *                           type: integer
+ *                           example: 5
+ *                         statusBreakdown:
+ *                           type: object
+ *                           properties:
+ *                             PAID:
+ *                               type: integer
+ *                               example: 120
+ *                             UNPAID:
+ *                               type: integer
+ *                               example: 25
+ *                             OVERDUE:
+ *                               type: integer
+ *                               example: 5
  *
  * /invoices/{invoiceId}:
  *   get:
@@ -176,9 +417,10 @@ export default router;
  *         required: true
  *         schema:
  *           type: string
+ *         description: Invoice ID
  *     responses:
  *       200:
- *         description: Invoice found
+ *         description: Invoice retrieved successfully
  *         content:
  *           application/json:
  *             schema:
@@ -189,15 +431,14 @@ export default router;
  *                   example: true
  *                 message:
  *                   type: string
- *                   example: Invoice found
+ *                   example: Invoice retrieved successfully
  *                 data:
- *                   $ref: '#/components/schemas/Invoice'
+ *                   type: object
+ *                   properties:
+ *                     invoice:
+ *                       $ref: '#/components/schemas/Invoice'
  *       404:
  *         description: Invoice not found
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
  *   patch:
  *     summary: Update invoice by ID
  *     tags:
@@ -210,6 +451,7 @@ export default router;
  *         required: true
  *         schema:
  *           type: string
+ *         description: Invoice ID
  *     requestBody:
  *       required: true
  *       content:
@@ -217,41 +459,36 @@ export default router;
  *           schema:
  *             type: object
  *             properties:
- *               amount:
- *                 type: number
- *                 format: float
- *                 example: 2000.00
+ *               dueDate:
+ *                 type: string
+ *                 format: date
+ *                 example: "2024-12-31"
  *               notes:
  *                 type: string
- *                 example: "Updated invoice notes"
+ *                 example: "Updated notes"
+ *               thanksMessage:
+ *                 type: string
+ *                 example: "Updated thanks message"
+ *               paymentTerms:
+ *                 type: string
+ *                 example: "Net 45 days"
+ *               paymentMethod:
+ *                 type: string
+ *                 example: "Credit Card"
+ *               bankName:
+ *                 type: string
+ *                 example: "Updated Bank"
+ *               status:
+ *                 type: string
+ *                 enum: [UNPAID, PAID, OVERDUE, CANCELLED]
+ *                 example: PAID
  *     responses:
  *       200:
- *         description: Invoice updated
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: Invoice updated successfully
- *                 data:
- *                   $ref: '#/components/schemas/Invoice'
+ *         description: Invoice updated successfully
  *       400:
  *         description: Validation error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
  *       404:
  *         description: Invoice not found
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
  *   delete:
  *     summary: Delete invoice by ID
  *     tags:
@@ -264,15 +501,14 @@ export default router;
  *         required: true
  *         schema:
  *           type: string
+ *         description: Invoice ID
  *     responses:
- *       204:
- *         description: Invoice deleted
+ *       200:
+ *         description: Invoice deleted successfully
+ *       400:
+ *         description: Cannot delete paid invoice
  *       404:
  *         description: Invoice not found
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
  *
  * /invoices/{invoiceId}/status:
  *   patch:
@@ -287,6 +523,7 @@ export default router;
  *         required: true
  *         schema:
  *           type: string
+ *         description: Invoice ID
  *     requestBody:
  *       required: true
  *       content:
@@ -298,34 +535,217 @@ export default router;
  *             properties:
  *               status:
  *                 type: string
- *                 enum: [PENDING, PAID, OVERDUE, CANCELLED]
+ *                 enum: [UNPAID, PAID, OVERDUE, CANCELLED]
  *                 example: PAID
  *     responses:
  *       200:
- *         description: Invoice status updated
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: Invoice status updated successfully
- *                 data:
- *                   $ref: '#/components/schemas/Invoice'
+ *         description: Invoice status updated successfully
  *       400:
- *         description: Validation error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
+ *         description: Invalid status or validation error
  *       404:
  *         description: Invoice not found
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
+ *
+ * /invoices/{invoiceId}/items:
+ *   patch:
+ *     summary: Update invoice items
+ *     tags:
+ *       - Invoices
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: invoiceId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Invoice ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - items
+ *             properties:
+ *               items:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   required:
+ *                     - serviceId
+ *                     - description
+ *                     - quantity
+ *                     - rate
+ *                   properties:
+ *                     serviceId:
+ *                       type: string
+ *                       example: "uuid-service-id"
+ *                     description:
+ *                       type: string
+ *                       example: "Updated service description"
+ *                     quantity:
+ *                       type: integer
+ *                       example: 3
+ *                     rate:
+ *                       type: number
+ *                       format: float
+ *                       example: 800.00
+ *                     discount:
+ *                       type: number
+ *                       format: float
+ *                       example: 0.00
+ *               taxRate:
+ *                 type: number
+ *                 format: float
+ *                 example: 15.0
+ *               discountAmount:
+ *                 type: number
+ *                 format: float
+ *                 example: 100.00
+ *     responses:
+ *       200:
+ *         description: Invoice items updated successfully
+ *       400:
+ *         description: Validation error
+ *       404:
+ *         description: Invoice not found
+ *
+ * components:
+ *   schemas:
+ *     Invoice:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: string
+ *           example: "uuid-invoice-id"
+ *         invoiceId:
+ *           type: string
+ *           example: "INV-BR001-20240902-001"
+ *         clientId:
+ *           type: string
+ *           example: "uuid-client-id"
+ *         branchId:
+ *           type: string
+ *           example: "uuid-branch-id"
+ *         employeeId:
+ *           type: string
+ *           example: "uuid-employee-id"
+ *         invoiceNumber:
+ *           type: string
+ *           example: "INV-202409-0001"
+ *         totalAmount:
+ *           type: number
+ *           format: float
+ *           example: 1725.00
+ *         subTotalAmount:
+ *           type: number
+ *           format: float
+ *           example: 1500.00
+ *         discountAmount:
+ *           type: number
+ *           format: float
+ *           example: 50.00
+ *         taxAmount:
+ *           type: number
+ *           format: float
+ *           example: 275.00
+ *         taxRate:
+ *           type: number
+ *           format: float
+ *           example: 10.5
+ *         status:
+ *           type: string
+ *           enum: [UNPAID, PAID, OVERDUE, CANCELLED]
+ *           example: UNPAID
+ *         dueDate:
+ *           type: string
+ *           format: date-time
+ *           example: "2024-12-31T00:00:00.000Z"
+ *         issuedDate:
+ *           type: string
+ *           format: date-time
+ *           example: "2024-09-02T00:00:00.000Z"
+ *         notes:
+ *           type: string
+ *           example: "Payment terms: Net 30 days"
+ *         thanksMessage:
+ *           type: string
+ *           example: "Thank you for your business!"
+ *         paymentTerms:
+ *           type: string
+ *           example: "Net 30 days"
+ *         paymentMethod:
+ *           type: string
+ *           example: "Internet Banking"
+ *         bankName:
+ *           type: string
+ *           example: "City Bank"
+ *         bankCountry:
+ *           type: string
+ *           example: "USA"
+ *         bankIban:
+ *           type: string
+ *           example: "US29NWBK60161331926819"
+ *         bankSwiftCode:
+ *           type: string
+ *           example: "NWBKUS33"
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *           example: "2024-09-02T03:37:00.000Z"
+ *         updatedAt:
+ *           type: string
+ *           format: date-time
+ *           example: "2024-09-02T03:37:00.000Z"
+ *         client:
+ *           $ref: '#/components/schemas/Client'
+ *         branch:
+ *           $ref: '#/components/schemas/Branch'
+ *         employee:
+ *           $ref: '#/components/schemas/Employee'
+ *         items:
+ *           type: array
+ *           items:
+ *             $ref: '#/components/schemas/InvoiceItem'
+ *     InvoiceItem:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: string
+ *           example: "uuid-item-id"
+ *         invoiceId:
+ *           type: string
+ *           example: "uuid-invoice-id"
+ *         serviceId:
+ *           type: string
+ *           example: "uuid-service-id"
+ *         description:
+ *           type: string
+ *           example: "Web Development Service"
+ *         quantity:
+ *           type: integer
+ *           example: 2
+ *         rate:
+ *           type: number
+ *           format: float
+ *           example: 750.00
+ *         discount:
+ *           type: number
+ *           format: float
+ *           example: 50.00
+ *         total:
+ *           type: number
+ *           format: float
+ *           example: 1450.00
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *           example: "2024-09-02T03:37:00.000Z"
+ *         updatedAt:
+ *           type: string
+ *           format: date-time
+ *           example: "2024-09-02T03:37:00.000Z"
+ *         service:
+ *           $ref: '#/components/schemas/Service'
  */

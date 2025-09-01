@@ -53,6 +53,7 @@ model Employee {
   attendances     Attendance[] // Relation with Attendance model
   permissions     Permission[] // Array of permissions (no relation needed)
   Client          Client[]
+  Invoice         Invoice[]
 
   @@map("employees")
 }
@@ -112,35 +113,50 @@ model Client {
 }
 
 model Invoice {
-  id            String        @id @default(uuid())
-  invoiceId     String?       @unique // Format: INV-BR001-2024-001, INV-BR002-2024-001, etc.
-  clientId      String
-  client        Client        @relation(fields: [clientId], references: [id])
-  invoiceNumber String        @unique
-  totalAmount   Float
-  status        InvoiceStatus @default(PENDING)
-  dueDate       DateTime
-  issuedDate    DateTime      @default(now())
-  branchId      String
-  branch        Branch        @relation(fields: [branchId], references: [id])
-  notes         String? // Additional notes for the invoice
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-  items         InvoiceItem[]
+  id             String        @id @default(uuid())
+  invoiceId      String?       @unique // Format: INV-BR001-2024-001, INV-BR002-2024-001, etc.
+  clientId       String
+  client         Client        @relation(fields: [clientId], references: [id])
+  invoiceNumber  String        @unique
+  totalAmount    Float
+  subTotalAmount Float
+  discountAmount Float
+  taxAmount      Float
+  taxRate        Float
+  status         InvoiceStatus @default(UNPAID)
+  dueDate        DateTime
+  issuedDate     DateTime      @default(now())
+  branchId       String
+  branch         Branch        @relation(fields: [branchId], references: [id])
+  notes          String?
+  thanksMessage  String
+  paymentTerms   String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  items          InvoiceItem[]
+  employeeId     String
+  employee       Employee      @relation(fields: [employeeId], references: [id])
+  paymentMethod  String        @default("Internet Banking") // Added: Payment method
+  bankName       String?
+  bankCountry    String?
+  bankIban       String?
+  bankSwiftCode  String?
 
   @@map("invoices")
 }
 
 model InvoiceItem {
-  id        String   @id @default(uuid())
-  invoiceId String
-  invoice   Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
-  serviceId String
-  service   Service  @relation(fields: [serviceId], references: [id])
-  quantity  Int
-  price     Float
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String   @id @default(uuid())
+  invoiceId   String
+  invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  serviceId   String
+  service     Service  @relation(fields: [serviceId], references: [id])
+  description String
+  rate        Float
+  discount    Float    @default(0)
+  total       Float
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model Token {
@@ -201,7 +217,7 @@ enum Permission {
 }
 
 enum InvoiceStatus {
-  PENDING
+  UNPAID
   PAID
   OVERDUE
   CANCELLED
