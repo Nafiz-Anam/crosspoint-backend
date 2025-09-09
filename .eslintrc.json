@@ -11,6 +11,7 @@
     "project": "./tsconfig.json"
   },
   "plugins": ["@typescript-eslint"],
+  "ignorePatterns": ["scripts/assign-admin-permissions.js"],
   "rules": {
     "indent": ["error", 2],
     "@typescript-eslint/no-unused-vars": [
