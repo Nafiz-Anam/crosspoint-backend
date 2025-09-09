@@ -24,7 +24,15 @@ const createEmployee = catchAsync(async (req, res) => {
 const getEmployees = catchAsync(async (req, res) => {
   const filter = pick(req.query, ["name", "role"]);
   const options = pick(req.query, ["sortBy", "limit", "page"]);
-  const result = await employeeService.queryEmployees(filter, options);
+
+  // Convert string values to appropriate types for options
+  const processedOptions = {
+    ...options,
+    limit: options.limit ? parseInt(options.limit as string, 10) : undefined,
+    page: options.page ? parseInt(options.page as string, 10) : undefined,
+  };
+
+  const result = await employeeService.queryEmployees(filter, processedOptions);
 
   res.status(httpStatus.OK).json({
     success: true,
@@ -57,14 +65,30 @@ const deleteEmployee = catchAsync(async (req, res) => {
 const getHREmployees = catchAsync(async (req, res) => {
   const filter = { ...pick(req.query, ["name"]), role: "HR" };
   const options = pick(req.query, ["sortBy", "limit", "page"]);
-  const result = await employeeService.queryEmployees(filter, options);
+
+  // Convert string values to appropriate types for options
+  const processedOptions = {
+    ...options,
+    limit: options.limit ? parseInt(options.limit as string, 10) : undefined,
+    page: options.page ? parseInt(options.page as string, 10) : undefined,
+  };
+
+  const result = await employeeService.queryEmployees(filter, processedOptions);
   res.send(result);
 });
 
 const getEmployeesList = catchAsync(async (req, res) => {
   const filter = { ...pick(req.query, ["name"]), role: "EMPLOYEE" };
   const options = pick(req.query, ["sortBy", "limit", "page"]);
-  const result = await employeeService.queryEmployees(filter, options);
+
+  // Convert string values to appropriate types for options
+  const processedOptions = {
+    ...options,
+    limit: options.limit ? parseInt(options.limit as string, 10) : undefined,
+    page: options.page ? parseInt(options.page as string, 10) : undefined,
+  };
+
+  const result = await employeeService.queryEmployees(filter, processedOptions);
   res.send(result);
 });
 

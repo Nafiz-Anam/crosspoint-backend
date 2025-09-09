@@ -8,3 +8,4 @@ export { default as clientService } from "./client.service";
 export { default as invoiceService } from "./invoice.service";
 export { default as branchService } from "./branch.service";
 export { default as attendanceService } from "./attendance.service";
+export { default as bankAccountService } from "./bankAccount.service";

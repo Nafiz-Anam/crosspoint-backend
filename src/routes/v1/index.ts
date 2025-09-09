@@ -7,6 +7,7 @@ import clientRoute from "./ClientRoute/client.route";
 import invoiceRoute from "./InvoiceRoute/invoice.route";
 import branchRoute from "./BranchRoute/branch.route";
 import attendanceRoute from "./AttendanceRoute/attendance.route";
+import bankAccountRoute from "./BankAccountRoute/bankAccount.route";
 
 const router = express.Router();
 
@@ -42,6 +43,10 @@ const defaultRoutes = [
   {
     path: "/attendance",
     route: attendanceRoute,
+  },
+  {
+    path: "/bank-accounts",
+    route: bankAccountRoute,
   },
 ];
 

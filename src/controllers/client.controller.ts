@@ -45,7 +45,15 @@ const createClient = catchAsync(async (req, res) => {
 const getClients = catchAsync(async (req, res) => {
   const filter = pick(req.query, ["name", "email", "serviceId"]);
   const options = pick(req.query, ["sortBy", "limit", "page"]);
-  const result = await clientService.queryClients(filter, options);
+
+  // Convert string values to appropriate types for options
+  const processedOptions = {
+    ...options,
+    limit: options.limit ? parseInt(options.limit as string, 10) : undefined,
+    page: options.page ? parseInt(options.page as string, 10) : undefined,
+  };
+
+  const result = await clientService.queryClients(filter, processedOptions);
 
   sendResponse(
     res,

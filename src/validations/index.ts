@@ -3,3 +3,4 @@ export { default as employeeValidation } from "./employee.validation";
 export * as branchValidation from "./branch.validation";
 export { default as clientValidation } from "./client.validation";
 export { default as invoiceValidation } from "./invoice.validation";
+export { bankAccountValidation } from "./bankAccount.validation";

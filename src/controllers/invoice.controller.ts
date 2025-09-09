@@ -20,10 +20,7 @@ const createInvoice = catchAsync(async (req, res) => {
     taxRate,
     discountAmount,
     paymentMethod,
-    bankName,
-    bankCountry,
-    bankIban,
-    bankSwiftCode,
+    bankAccountId,
   } = req.body;
 
   // Validate required fields
@@ -44,10 +41,10 @@ const createInvoice = catchAsync(async (req, res) => {
 
   // Validate each item has required fields
   for (const item of items) {
-    if (!item.serviceId || !item.description || !item.quantity || !item.rate) {
+    if (!item.serviceId || !item.description || !item.rate) {
       throw new ApiError(
         httpStatus.BAD_REQUEST,
-        "Each item must have serviceId, description, quantity, and rate"
+        "Each item must have serviceId, description, and rate"
       );
     }
   }
@@ -65,10 +62,7 @@ const createInvoice = catchAsync(async (req, res) => {
     taxRate: taxRate || 0,
     discountAmount: discountAmount || 0,
     paymentMethod,
-    bankName,
-    bankCountry,
-    bankIban,
-    bankSwiftCode,
+    bankAccountId,
   });
 
   sendResponse(
@@ -104,7 +98,14 @@ const getInvoices = catchAsync(async (req, res) => {
     }
   }
 
-  const result = await invoiceService.queryInvoices(filter, options);
+  // Convert string values to appropriate types for options
+  const processedOptions = {
+    ...options,
+    limit: options.limit ? parseInt(options.limit as string, 10) : undefined,
+    page: options.page ? parseInt(options.page as string, 10) : undefined,
+  };
+
+  const result = await invoiceService.queryInvoices(filter, processedOptions);
 
   sendResponse(
     res,
@@ -185,18 +186,15 @@ const updateInvoiceItems = catchAsync(async (req, res) => {
 
   // Validate each item
   for (const item of items) {
-    if (!item.serviceId || !item.description || !item.quantity || !item.rate) {
+    if (!item.serviceId || !item.description || !item.rate) {
       throw new ApiError(
         httpStatus.BAD_REQUEST,
-        "Each item must have serviceId, description, quantity, and rate"
+        "Each item must have serviceId, description, and rate"
       );
     }
 
-    if (item.quantity <= 0 || item.rate <= 0) {
-      throw new ApiError(
-        httpStatus.BAD_REQUEST,
-        "Quantity and rate must be greater than 0"
-      );
+    if (item.rate <= 0) {
+      throw new ApiError(httpStatus.BAD_REQUEST, "Rate must be greater than 0");
     }
 
     if (item.discount && item.discount < 0) {

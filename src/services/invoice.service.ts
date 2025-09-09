@@ -6,7 +6,6 @@ import ApiError from "../utils/ApiError";
 interface InvoiceItemData {
   serviceId: string;
   description: string;
-  quantity: number;
   rate: number;
   discount?: number;
 }
@@ -24,10 +23,7 @@ interface CreateInvoiceData {
   taxRate?: number;
   discountAmount?: number;
   paymentMethod?: string;
-  bankName?: string;
-  bankCountry?: string;
-  bankIban?: string;
-  bankSwiftCode?: string;
+  bankAccountId?: string;
 }
 
 /**
@@ -44,7 +40,7 @@ const calculateInvoiceTotals = (
 ) => {
   const subTotalAmount = items.reduce((total, item) => {
     const discount = item.discount || 0;
-    const lineTotal = item.quantity * item.rate - discount;
+    const lineTotal = item.rate - discount;
     return total + lineTotal;
   }, 0);
 
@@ -125,17 +121,12 @@ const generateInvoiceNumber = async (): Promise<string> => {
 
 /**
  * Calculate individual item total
- * @param {number} quantity
  * @param {number} rate
  * @param {number} discount
  * @returns {number}
  */
-const calculateItemTotal = (
-  quantity: number,
-  rate: number,
-  discount: number = 0
-): number => {
-  return quantity * rate - discount;
+const calculateItemTotal = (rate: number, discount: number = 0): number => {
+  return rate - discount;
 };
 
 /**
@@ -208,13 +199,6 @@ const createInvoice = async (
       );
     }
 
-    if (item.quantity <= 0) {
-      throw new ApiError(
-        httpStatus.BAD_REQUEST,
-        "Quantity must be greater than 0"
-      );
-    }
-
     if (item.rate <= 0) {
       throw new ApiError(httpStatus.BAD_REQUEST, "Rate must be greater than 0");
     }
@@ -257,10 +241,7 @@ const createInvoice = async (
         thanksMessage: invoiceData.thanksMessage,
         paymentTerms: invoiceData.paymentTerms,
         paymentMethod: invoiceData.paymentMethod || "Internet Banking",
-        bankName: invoiceData.bankName,
-        bankCountry: invoiceData.bankCountry,
-        bankIban: invoiceData.bankIban,
-        bankSwiftCode: invoiceData.bankSwiftCode,
+        bankAccountId: invoiceData.bankAccountId,
       },
     });
 
@@ -268,7 +249,7 @@ const createInvoice = async (
     const invoiceItems = await Promise.all(
       invoiceData.items.map((item) => {
         const discount = item.discount || 0;
-        const total = calculateItemTotal(item.quantity, item.rate, discount);
+        const total = calculateItemTotal(item.rate, discount);
 
         return tx.invoiceItem.create({
           data: {
@@ -453,7 +434,7 @@ const updateInvoiceItems = async (
     await Promise.all(
       items.map((item) => {
         const discount = item.discount || 0;
-        const total = calculateItemTotal(item.quantity, item.rate, discount);
+        const total = calculateItemTotal(item.rate, discount);
 
         return tx.invoiceItem.create({
           data: {

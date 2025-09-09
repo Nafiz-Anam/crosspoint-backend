@@ -28,6 +28,11 @@ const allRoles = {
     Permission.UPDATE_INVOICE,
     Permission.DELETE_INVOICE,
 
+    Permission.CREATE_BANK_ACCOUNT,
+    Permission.READ_BANK_ACCOUNT,
+    Permission.UPDATE_BANK_ACCOUNT,
+    Permission.DELETE_BANK_ACCOUNT,
+
     Permission.GENERATE_REPORTS,
     Permission.VIEW_REPORTS,
   ],
@@ -55,6 +60,11 @@ const allRoles = {
     Permission.UPDATE_INVOICE,
     Permission.DELETE_INVOICE,
 
+    Permission.CREATE_BANK_ACCOUNT,
+    Permission.READ_BANK_ACCOUNT,
+    Permission.UPDATE_BANK_ACCOUNT,
+    Permission.DELETE_BANK_ACCOUNT,
+
     Permission.GENERATE_REPORTS,
     Permission.VIEW_REPORTS,
   ],
@@ -62,9 +72,18 @@ const allRoles = {
     // Employees start with no permissions by default
     // Permissions will be assigned individually
   ],
+  [Role.MANAGER]: [
+    // Manager permissions - can be customized as needed
+    Permission.READ_CLIENT,
+    Permission.READ_SERVICE,
+    Permission.READ_INVOICE,
+    Permission.READ_BANK_ACCOUNT,
+    Permission.VIEW_REPORTS,
+  ],
 };
 
 export const roles = Object.keys(allRoles);
+export { allRoles };
 
 export const roleRights = new Map(Object.entries(allRoles));
 

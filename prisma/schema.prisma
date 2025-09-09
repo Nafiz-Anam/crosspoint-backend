@@ -137,10 +137,8 @@ model Invoice {
   employeeId     String
   employee       Employee      @relation(fields: [employeeId], references: [id])
   paymentMethod  String        @default("Internet Banking") // Added: Payment method
-  bankName       String?
-  bankCountry    String?
-  bankIban       String?
-  bankSwiftCode  String?
+  bankAccountId  String?
+  bankAccount    BankAccount?  @relation(fields: [bankAccountId], references: [id])
 
   @@map("invoices")
 }
@@ -168,6 +166,23 @@ model Token {
   createdAt   DateTime  @default(now())
   employee    Employee  @relation(fields: [employeeId], references: [id])
   employeeId  String
+}
+
+model BankAccount {
+  id            String   @id @default(uuid())
+  bankName      String
+  bankCountry   String
+  bankIban      String   @unique
+  bankSwiftCode String?
+  accountName   String? // Optional account holder name
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  invoices Invoice[]
+
+  @@map("bank_accounts")
 }
 
 enum Role {
@@ -202,6 +217,12 @@ enum Permission {
   READ_INVOICE
   UPDATE_INVOICE
   DELETE_INVOICE
+
+  // Bank Account Management
+  CREATE_BANK_ACCOUNT
+  READ_BANK_ACCOUNT
+  UPDATE_BANK_ACCOUNT
+  DELETE_BANK_ACCOUNT
 
   // Report Management
   GENERATE_REPORTS

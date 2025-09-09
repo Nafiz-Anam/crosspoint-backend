@@ -3,14 +3,31 @@ import ApiError from "../utils/ApiError";
 import { Request, Response, NextFunction } from "express";
 import Joi, { Schema } from "joi";
 
-export function validate(schema: Schema) {
+export function validate(
+  schema: Schema,
+  source: "body" | "query" | "params" = "body"
+) {
   return async (
     req: Request,
     res: Response,
     next: NextFunction
   ): Promise<void> => {
     try {
-      await schema.validateAsync(req.body);
+      let dataToValidate;
+      switch (source) {
+        case "query":
+          dataToValidate = req.query;
+          break;
+        case "params":
+          dataToValidate = req.params;
+          break;
+        case "body":
+        default:
+          dataToValidate = req.body;
+          break;
+      }
+
+      await schema.validateAsync(dataToValidate);
       next();
     } catch (error) {
       if (error instanceof Joi.ValidationError) {

@@ -4,6 +4,7 @@ import prisma from "../client";
 import ApiError from "../utils/ApiError";
 import { encryptPassword } from "../utils/encryption";
 import { branchService } from "../services";
+import { allRoles } from "../config/roles";
 
 const registerEmployee = async (email: string, password: string) => {
   // Check if email already exists
@@ -75,6 +76,11 @@ const createEmployee = async ({
     employeeId = await branchService.generateEmployeeId(branchId);
   }
 
+  // Get role-based permissions if no specific permissions provided
+  const rolePermissions = allRoles[role] || [];
+  const finalPermissions =
+    permissions.length > 0 ? permissions : rolePermissions;
+
   // Create employee with permissions (stored as enum array)
   const employee = await prisma.employee.create({
     data: {
@@ -85,7 +91,7 @@ const createEmployee = async ({
       branchId,
       isActive,
       employeeId,
-      permissions: permissions, // Directly assign enum array
+      permissions: finalPermissions, // Use role-based or provided permissions
     },
     include: {
       branch: true,

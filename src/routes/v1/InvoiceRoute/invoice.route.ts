@@ -19,12 +19,12 @@ router
   .route("/")
   .post(
     requirePermission(Permission.CREATE_INVOICE),
-    validate(invoiceValidation.createInvoice.body),
+    validate(invoiceValidation.createInvoice.body, "body"),
     invoiceController.createInvoice
   )
   .get(
     requirePermission(Permission.READ_INVOICE),
-    validate(invoiceValidation.getInvoices.query),
+    validate(invoiceValidation.getInvoices.query, "query"),
     invoiceController.getInvoices
   );
 
@@ -35,29 +35,29 @@ router
     invoiceController.generateInvoiceNumber
   );
 
-router
-  .route("/stats")
-  .get(
-    requirePermission(Permission.READ_INVOICE),
-    validate(invoiceValidation.getInvoiceStats.query),
-    invoiceController.getInvoiceStats
-  );
+// router
+//   .route("/stats")
+//   .get(
+//     requirePermission(Permission.READ_INVOICE),
+//     validate(invoiceValidation.getInvoiceStats.query, "query"),
+//     invoiceController.getInvoiceStats
+//   );
 
 router
   .route("/:invoiceId")
   .get(
     requirePermission(Permission.READ_INVOICE),
-    validate(invoiceValidation.getInvoice.params),
+    validate(invoiceValidation.getInvoice.params, "params"),
     invoiceController.getInvoice
   )
   .patch(
     requirePermission(Permission.UPDATE_INVOICE),
-    validate(invoiceValidation.updateInvoice.body),
+    validate(invoiceValidation.updateInvoice.body, "body"),
     invoiceController.updateInvoice
   )
   .delete(
     requirePermission(Permission.DELETE_INVOICE),
-    validate(invoiceValidation.deleteInvoice.params),
+    validate(invoiceValidation.deleteInvoice.params, "params"),
     invoiceController.deleteInvoice
   );
 
@@ -65,7 +65,8 @@ router
   .route("/:invoiceId/status")
   .patch(
     requirePermission(Permission.UPDATE_INVOICE),
-    validate(invoiceValidation.updateInvoiceStatus.body),
+    validate(invoiceValidation.updateInvoiceStatus.params, "params"),
+    validate(invoiceValidation.updateInvoiceStatus.body, "body"),
     invoiceController.updateInvoiceStatus
   );
 
@@ -73,7 +74,8 @@ router
   .route("/:invoiceId/items")
   .patch(
     requirePermission(Permission.UPDATE_INVOICE),
-    validate(invoiceValidation.updateInvoiceItems.body),
+    validate(invoiceValidation.updateInvoiceItems.params, "params"),
+    validate(invoiceValidation.updateInvoiceItems.body, "body"),
     invoiceController.updateInvoiceItems
   );
 
@@ -157,7 +159,6 @@ export default router;
  *                   required:
  *                     - serviceId
  *                     - description
- *                     - quantity
  *                     - rate
  *                   properties:
  *                     serviceId:
@@ -166,9 +167,6 @@ export default router;
  *                     description:
  *                       type: string
  *                       example: "Web Development Service"
- *                     quantity:
- *                       type: integer
- *                       example: 2
  *                     rate:
  *                       type: number
  *                       format: float
@@ -575,7 +573,6 @@ export default router;
  *                   required:
  *                     - serviceId
  *                     - description
- *                     - quantity
  *                     - rate
  *                   properties:
  *                     serviceId:
@@ -584,9 +581,6 @@ export default router;
  *                     description:
  *                       type: string
  *                       example: "Updated service description"
- *                     quantity:
- *                       type: integer
- *                       example: 3
  *                     rate:
  *                       type: number
  *                       format: float
@@ -723,9 +717,6 @@ export default router;
  *         description:
  *           type: string
  *           example: "Web Development Service"
- *         quantity:
- *           type: integer
- *           example: 2
  *         rate:
  *           type: number
  *           format: float
