@@ -8,6 +8,7 @@ import invoiceRoute from "./InvoiceRoute/invoice.route";
 import branchRoute from "./BranchRoute/branch.route";
 import attendanceRoute from "./AttendanceRoute/attendance.route";
 import bankAccountRoute from "./BankAccountRoute/bankAccount.route";
+import dashboardRoute from "./DashboardRoute/dashboard.route";
 
 const router = express.Router();
 
@@ -47,6 +48,10 @@ const defaultRoutes = [
   {
     path: "/bank-accounts",
     route: bankAccountRoute,
+  },
+  {
+    path: "/dashboard",
+    route: dashboardRoute,
   },
 ];
 

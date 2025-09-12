@@ -1,0 +1,45 @@
+import express from "express";
+import auth from "../../../middlewares/auth";
+import { dashboardController } from "../../../controllers";
+import {
+  loadUserPermissions,
+  requirePermission,
+} from "../../../middlewares/permission";
+import { Permission } from "@prisma/client";
+import { validate } from "../../../middlewares/validate";
+import { dashboardValidation } from "../../../validations";
+
+const router = express.Router();
+
+// All routes require authentication and permission loading
+router.use(auth());
+router.use(loadUserPermissions);
+
+// Dashboard statistics route
+router
+  .route("/stats")
+  .get(
+    requirePermission(Permission.VIEW_REPORTS),
+    validate(dashboardValidation.getDashboardStats.query, "query"),
+    dashboardController.getDashboardStats
+  );
+
+// Weekly earnings route
+router
+  .route("/weekly-earnings")
+  .get(
+    requirePermission(Permission.VIEW_REPORTS),
+    validate(dashboardValidation.getWeeklyEarnings.query, "query"),
+    dashboardController.getWeeklyEarnings
+  );
+
+// Invoice statistics route
+router
+  .route("/invoice-stats")
+  .get(
+    requirePermission(Permission.VIEW_REPORTS),
+    validate(dashboardValidation.getInvoiceStats.query, "query"),
+    dashboardController.getInvoiceStats
+  );
+
+export default router;

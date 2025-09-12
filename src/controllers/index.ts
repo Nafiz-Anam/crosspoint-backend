@@ -6,3 +6,4 @@ export { default as clientController } from "./client.controller";
 export { default as invoiceController } from "./invoice.controller";
 export { default as branchController } from "./branch.controller";
 export { default as bankAccountController } from "./bankAccount.controller";
+export * as dashboardController from "./dashboard.controller";

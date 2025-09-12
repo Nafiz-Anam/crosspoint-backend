@@ -1,5 +1,6 @@
 import { RequestHandler } from "express";
 import { Request, Response, NextFunction } from "express";
+import { ParsedQs } from "qs";
 
 export interface CustomParamsDictionary {
   [key: string]: any;
@@ -11,7 +12,7 @@ const catchAsync =
       CustomParamsDictionary,
       any,
       any,
-      qs.ParsedQs,
+      ParsedQs,
       Record<string, any>
     >
   ) =>

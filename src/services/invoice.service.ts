@@ -39,8 +39,9 @@ const calculateInvoiceTotals = (
   discountAmount: number = 0
 ) => {
   const subTotalAmount = items.reduce((total, item) => {
-    const discount = item.discount || 0;
-    const lineTotal = item.rate - discount;
+    const discountPercent = item.discount || 0;
+    const discountAmount = (item.rate * discountPercent) / 100;
+    const lineTotal = item.rate - discountAmount;
     return total + lineTotal;
   }, 0);
 
@@ -126,7 +127,8 @@ const generateInvoiceNumber = async (): Promise<string> => {
  * @returns {number}
  */
 const calculateItemTotal = (rate: number, discount: number = 0): number => {
-  return rate - discount;
+  const discountAmount = (rate * discount) / 100;
+  return rate - discountAmount;
 };
 
 /**
@@ -322,6 +324,7 @@ const getInvoiceById = async (id: string): Promise<Invoice | null> => {
       client: true,
       branch: true,
       employee: true,
+      bankAccount: true,
       items: {
         include: {
           service: true,
