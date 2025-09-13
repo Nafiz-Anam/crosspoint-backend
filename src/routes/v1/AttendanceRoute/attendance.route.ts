@@ -10,7 +10,11 @@ const router = express.Router();
 router.use(auth());
 
 // Employee endpoints (for their own attendance)
-router.post("/check-in", auth(), attendanceController.checkIn);
+router.post(
+  "/check-in",
+  validate(attendanceValidation.checkIn),
+  attendanceController.checkIn
+);
 
 router
   .route("/check-out")
