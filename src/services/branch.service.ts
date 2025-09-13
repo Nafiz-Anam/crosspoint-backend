@@ -24,16 +24,45 @@ const generateEmployeeId = async (branchId: string): Promise<string> => {
     throw new ApiError(StatusCodes.NOT_FOUND, "Branch not found");
   }
   const branchCode = branch.branchId;
-  const lastEmployee = await prisma.employee.findFirst({
-    where: { employeeId: { startsWith: `EMP-${branchCode}-` } },
-    orderBy: { employeeId: "desc" },
+
+  // Use a more robust approach with database transaction
+  return await prisma.$transaction(async (tx) => {
+    // Get the count of employees for this branch
+    const employeeCount = await tx.employee.count({
+      where: {
+        branchId: branchId,
+        employeeId: { startsWith: `EMP-${branchCode}-` },
+      },
+    });
+
+    // Generate the next employee ID
+    const nextNumber = employeeCount + 1;
+    const employeeId = `EMP-${branchCode}-${nextNumber
+      .toString()
+      .padStart(3, "0")}`;
+
+    // Double-check that this ID doesn't exist (extra safety)
+    const existingEmployee = await tx.employee.findUnique({
+      where: { employeeId },
+      select: { id: true },
+    });
+
+    if (existingEmployee) {
+      // If it exists, find the highest number and increment
+      const lastEmployee = await tx.employee.findFirst({
+        where: { employeeId: { startsWith: `EMP-${branchCode}-` } },
+        orderBy: { employeeId: "desc" },
+      });
+
+      if (lastEmployee && lastEmployee.employeeId) {
+        const lastNumber = parseInt(lastEmployee.employeeId.split("-")[2]);
+        const finalNumber = lastNumber + 1;
+        return `EMP-${branchCode}-${finalNumber.toString().padStart(3, "0")}`;
+      }
+    }
+
+    return employeeId;
   });
-  if (!lastEmployee) {
-    return `EMP-${branchCode}-001`;
-  }
-  const lastNumber = parseInt((lastEmployee.employeeId ?? "").split("-")[2]);
-  const nextNumber = lastNumber + 1;
-  return `EMP-${branchCode}-${nextNumber.toString().padStart(3, "0")}`;
 };
 
 // Generate a unique customer ID for a specific branch

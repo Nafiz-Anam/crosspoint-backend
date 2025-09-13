@@ -73,7 +73,18 @@ const createEmployee = async ({
   // Generate employee ID (only for non-admin roles)
   let employeeId: string | undefined;
   if (branchId) {
-    employeeId = await branchService.generateEmployeeId(branchId);
+    try {
+      employeeId = await branchService.generateEmployeeId(branchId);
+      console.log(
+        `Generated employee ID: ${employeeId} for branch: ${branchId}`
+      );
+    } catch (error) {
+      console.error(
+        `Failed to generate employee ID for branch ${branchId}:`,
+        error
+      );
+      throw error;
+    }
   }
 
   // Get role-based permissions if no specific permissions provided
@@ -82,23 +93,38 @@ const createEmployee = async ({
     permissions.length > 0 ? permissions : rolePermissions;
 
   // Create employee with permissions (stored as enum array)
-  const employee = await prisma.employee.create({
-    data: {
-      email,
-      name,
-      password: await encryptPassword(password),
-      role,
-      branchId,
-      isActive,
-      employeeId,
-      permissions: finalPermissions, // Use role-based or provided permissions
-    },
-    include: {
-      branch: true,
-    },
-  });
-
-  return employee;
+  try {
+    const employee = await prisma.employee.create({
+      data: {
+        email,
+        name,
+        password: await encryptPassword(password),
+        role,
+        branchId,
+        isActive,
+        employeeId,
+        permissions: finalPermissions, // Use role-based or provided permissions
+      },
+      include: {
+        branch: true,
+      },
+    });
+    return employee;
+  } catch (error: any) {
+    // Handle unique constraint violations
+    if (error.code === "P2002") {
+      if (error.meta?.target?.includes("employeeId")) {
+        throw new ApiError(
+          httpStatus.CONFLICT,
+          "Employee ID already exists. Please try again."
+        );
+      }
+      if (error.meta?.target?.includes("email")) {
+        throw new ApiError(httpStatus.CONFLICT, "Email already exists");
+      }
+    }
+    throw error;
+  }
 };
 
 /**
