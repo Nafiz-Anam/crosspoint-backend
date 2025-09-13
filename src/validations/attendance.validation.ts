@@ -3,14 +3,18 @@ import { objectId } from "./custom.validation";
 
 export const attendanceValidation = {
   checkIn: Joi.object().keys({
-    notes: Joi.string().optional().max(500).messages({
-      "string.max": "Notes cannot exceed 500 characters",
+    body: Joi.object().keys({
+      notes: Joi.string().optional().max(500).messages({
+        "string.max": "Notes cannot exceed 500 characters",
+      }),
     }),
   }),
 
   checkOut: Joi.object().keys({
-    notes: Joi.string().optional().max(500).messages({
-      "string.max": "Notes cannot exceed 500 characters",
+    body: Joi.object().keys({
+      notes: Joi.string().optional().max(500).messages({
+        "string.max": "Notes cannot exceed 500 characters",
+      }),
     }),
   }),
 
