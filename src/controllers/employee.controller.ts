@@ -5,13 +5,22 @@ import catchAsync from "../utils/catchAsync";
 import { employeeService } from "../services";
 
 const createEmployee = catchAsync(async (req, res) => {
-  const { email, password, name, role, branchId, isActive, permissions } =
-    req.body;
+  const {
+    email,
+    password,
+    name,
+    nationalIdentificationNumber,
+    role,
+    branchId,
+    isActive,
+    permissions,
+  } = req.body;
 
   const employee = await employeeService.createEmployee({
     email,
     password,
     name,
+    nationalIdentificationNumber,
     role,
     branchId,
     isActive,
@@ -22,7 +31,11 @@ const createEmployee = catchAsync(async (req, res) => {
 });
 
 const getEmployees = catchAsync(async (req, res) => {
-  const filter = pick(req.query, ["name", "role"]);
+  const filter = pick(req.query, [
+    "name",
+    "nationalIdentificationNumber",
+    "role",
+  ]);
   const options = pick(req.query, ["sortBy", "limit", "page"]);
 
   // Convert string values to appropriate types for options

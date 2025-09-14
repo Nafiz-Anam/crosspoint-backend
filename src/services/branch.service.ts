@@ -116,12 +116,12 @@ const generateInvoiceId = async (
 // Generate a unique service ID
 const generateServiceId = async (): Promise<string> => {
   const lastService = await prisma.service.findFirst({
-    orderBy: { id: "desc" },
+    orderBy: { serviceId: "desc" },
   });
   if (!lastService) {
     return "SRV-001";
   }
-  const lastNumber = parseInt(lastService.id.split("-")[1]);
+  const lastNumber = parseInt(lastService.serviceId.split("-")[1]);
   const nextNumber = lastNumber + 1;
   return `SRV-${nextNumber.toString().padStart(3, "0")}`;
 };

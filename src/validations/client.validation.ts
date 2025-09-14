@@ -4,6 +4,11 @@ import { objectId } from "./custom.validation";
 const createClient = {
   body: Joi.object().keys({
     name: Joi.string().required().min(2).max(100),
+    nationalIdentificationNumber: Joi.string()
+      .optional()
+      .allow(null, "")
+      .min(5)
+      .max(20),
     email: Joi.string().required().email(),
     phone: Joi.string().optional().allow(null, ""),
     address: Joi.string().optional().allow(null, "").max(500),
@@ -17,7 +22,7 @@ const createClient = {
       .allow(null, "")
       .custom(objectId),
     status: Joi.string()
-      .valid("PENDING", "ACTIVE", "INACTIVE", "COMPLETED")
+      .valid("ACTIVE", "PENDING", "PROCESSING", "CANCELLED", "COMPLETED")
       .default("PENDING"),
   }),
 };
@@ -25,6 +30,7 @@ const createClient = {
 const getClients = {
   query: Joi.object().keys({
     name: Joi.string(),
+    nationalIdentificationNumber: Joi.string(),
     email: Joi.string(),
     phone: Joi.string(),
     city: Joi.string(),
@@ -32,7 +38,13 @@ const getClients = {
     serviceId: Joi.string().custom(objectId),
     branchId: Joi.string().custom(objectId),
     assignedEmployeeId: Joi.string().custom(objectId),
-    status: Joi.string().valid("PENDING", "ACTIVE", "INACTIVE", "COMPLETED"),
+    status: Joi.string().valid(
+      "ACTIVE",
+      "PENDING",
+      "PROCESSING",
+      "CANCELLED",
+      "COMPLETED"
+    ),
     sortBy: Joi.string(),
     limit: Joi.number().integer().min(1).max(100).default(10),
     page: Joi.number().integer().min(1).default(1),
@@ -52,6 +64,7 @@ const updateClient = {
   body: Joi.object()
     .keys({
       name: Joi.string().min(2).max(100),
+      nationalIdentificationNumber: Joi.string().allow(null, "").min(5).max(20),
       email: Joi.string().email(),
       phone: Joi.string().allow(null, ""),
       address: Joi.string().allow(null, "").max(500),
@@ -61,7 +74,13 @@ const updateClient = {
       serviceId: Joi.string().custom(objectId),
       branchId: Joi.string().custom(objectId),
       assignedEmployeeId: Joi.string().allow(null, "").custom(objectId),
-      status: Joi.string().valid("PENDING", "ACTIVE", "INACTIVE", "COMPLETED"),
+      status: Joi.string().valid(
+        "ACTIVE",
+        "PENDING",
+        "PROCESSING",
+        "CANCELLED",
+        "COMPLETED"
+      ),
     })
     .min(1),
 };
@@ -82,9 +101,10 @@ const bulkUpdateClients = {
     updates: Joi.object()
       .keys({
         status: Joi.string().valid(
-          "PENDING",
           "ACTIVE",
-          "INACTIVE",
+          "PENDING",
+          "PROCESSING",
+          "CANCELLED",
           "COMPLETED"
         ),
         assignedEmployeeId: Joi.string().allow(null, "").custom(objectId),
@@ -102,7 +122,7 @@ const updateClientStatus = {
   }),
   body: Joi.object().keys({
     status: Joi.string()
-      .valid("PENDING", "ACTIVE", "INACTIVE", "COMPLETED")
+      .valid("ACTIVE", "PENDING", "PROCESSING", "CANCELLED", "COMPLETED")
       .required(),
   }),
 };

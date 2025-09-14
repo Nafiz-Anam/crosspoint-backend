@@ -32,6 +32,7 @@ const createEmployee = async ({
   email,
   password,
   name,
+  nationalIdentificationNumber,
   role = Role.EMPLOYEE,
   branchId,
   isActive = true,
@@ -40,6 +41,7 @@ const createEmployee = async ({
   email: string;
   password: string;
   name: string;
+  nationalIdentificationNumber?: string;
   role?: Role;
   branchId?: string;
   isActive?: boolean;
@@ -54,6 +56,20 @@ const createEmployee = async ({
   // Check if email already exists
   if (await prisma.employee.findUnique({ where: { email } })) {
     throw new ApiError(httpStatus.BAD_REQUEST, "Email already taken");
+  }
+
+  // Check if national identification number already exists
+  if (nationalIdentificationNumber) {
+    if (
+      await prisma.employee.findUnique({
+        where: { nationalIdentificationNumber },
+      })
+    ) {
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        "Employee with this national identification number already exists"
+      );
+    }
   }
 
   // Validate branch exists if required
@@ -98,6 +114,7 @@ const createEmployee = async ({
       data: {
         email,
         name,
+        nationalIdentificationNumber,
         password: await encryptPassword(password),
         role,
         branchId,

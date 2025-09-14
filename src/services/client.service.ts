@@ -42,7 +42,8 @@ const createClient = async (
   address?: string,
   city?: string,
   postalCode?: string,
-  province?: string
+  province?: string,
+  nationalIdentificationNumber?: string
 ): Promise<Client> => {
   // Check if client with same email already exists
   const existingClient = await prisma.client.findUnique({
@@ -54,6 +55,20 @@ const createClient = async (
       httpStatus.BAD_REQUEST,
       "Client with this email already exists"
     );
+  }
+
+  // Check if client with same national identification number already exists
+  if (nationalIdentificationNumber) {
+    const existingClientByNationalId = await prisma.client.findUnique({
+      where: { nationalIdentificationNumber },
+    });
+
+    if (existingClientByNationalId) {
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        "Client with this national identification number already exists"
+      );
+    }
   }
 
   // Check if service exists
@@ -79,6 +94,7 @@ const createClient = async (
   return prisma.client.create({
     data: {
       name,
+      nationalIdentificationNumber,
       email,
       phone,
       address,

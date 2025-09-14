@@ -4,10 +4,12 @@ import ApiError from "../utils/ApiError";
 import catchAsync from "../utils/catchAsync";
 import { clientService } from "../services";
 import sendResponse from "../utils/responseHandler";
+import { ClientStatus } from "@prisma/client";
 
 const createClient = catchAsync(async (req, res) => {
   const {
     name,
+    nationalIdentificationNumber,
     email,
     serviceId,
     branchId,
@@ -19,18 +21,30 @@ const createClient = catchAsync(async (req, res) => {
     province,
     status,
   } = req.body;
+
+  // Validate status is a valid ClientStatus enum value
+  if (status && !Object.values(ClientStatus).includes(status)) {
+    throw new ApiError(
+      httpStatus.BAD_REQUEST,
+      `Invalid status: "${status}". Must be one of: ${Object.values(
+        ClientStatus
+      ).join(", ")}`
+    );
+  }
+
   const client = await clientService.createClient(
     name,
     email,
     serviceId,
     branchId,
     assignedEmployeeId,
-    status,
+    status || ClientStatus.PENDING,
     phone,
     address,
     city,
     postalCode,
-    province
+    province,
+    nationalIdentificationNumber
   );
 
   sendResponse(
@@ -43,7 +57,12 @@ const createClient = catchAsync(async (req, res) => {
 });
 
 const getClients = catchAsync(async (req, res) => {
-  const filter = pick(req.query, ["name", "email", "serviceId"]);
+  const filter = pick(req.query, [
+    "name",
+    "nationalIdentificationNumber",
+    "email",
+    "serviceId",
+  ]);
   const options = pick(req.query, ["sortBy", "limit", "page"]);
 
   // Convert string values to appropriate types for options

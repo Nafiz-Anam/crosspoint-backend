@@ -37,23 +37,24 @@ model Branch {
 }
 
 model Employee {
-  id              String       @id @default(uuid())
-  employeeId      String?      @unique // Format: EMP-BR001-001, EMP-BR002-001, etc.
-  email           String       @unique
-  name            String?
-  password        String
-  role            Role         @default(EMPLOYEE)
-  branchId        String?
-  branch          Branch?      @relation(fields: [branchId], references: [id])
-  isEmailVerified Boolean      @default(false)
-  isActive        Boolean      @default(true)
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
-  Token           Token[] // Relation with Token model
-  attendances     Attendance[] // Relation with Attendance model
-  permissions     Permission[] // Array of permissions (no relation needed)
-  Client          Client[]
-  Invoice         Invoice[]
+  id                           String       @id @default(uuid())
+  employeeId                   String?      @unique // Format: EMP-BR001-001, EMP-BR002-001, etc.
+  nationalIdentificationNumber String?      @unique // National ID number (unique)
+  email                        String       @unique
+  name                         String?
+  password                     String
+  role                         Role         @default(EMPLOYEE)
+  branchId                     String?
+  branch                       Branch?      @relation(fields: [branchId], references: [id])
+  isEmailVerified              Boolean      @default(false)
+  isActive                     Boolean      @default(true)
+  createdAt                    DateTime     @default(now())
+  updatedAt                    DateTime     @updatedAt
+  Token                        Token[] // Relation with Token model
+  attendances                  Attendance[] // Relation with Attendance model
+  permissions                  Permission[] // Array of permissions (no relation needed)
+  Client                       Client[]
+  Invoice                      Invoice[]
 
   @@map("employees")
 }
@@ -89,25 +90,26 @@ model Service {
 }
 
 model Client {
-  id                 String       @id @default(uuid())
-  clientId           String?      @unique // Format: CLT-BR001-001, CLT-BR002-001, etc.
-  name               String
-  email              String       @unique
-  phone              String?
-  address            String?
-  city               String? // Italian city
-  postalCode         String? // Italian postal code (CAP)
-  province           String? // Italian province (2-letter code)
-  serviceId          String
-  service            Service      @relation(fields: [serviceId], references: [id])
-  branchId           String
-  branch             Branch       @relation(fields: [branchId], references: [id])
-  assignedEmployeeId String?
-  assignedEmployee   Employee?    @relation(fields: [assignedEmployeeId], references: [id])
-  status             ClientStatus @default(PENDING)
-  createdAt          DateTime     @default(now())
-  updatedAt          DateTime     @updatedAt
-  invoices           Invoice[]
+  id                           String       @id @default(uuid())
+  clientId                     String?      @unique // Format: CLT-BR001-001, CLT-BR002-001, etc.
+  nationalIdentificationNumber String?      @unique // National ID number (unique)
+  name                         String
+  email                        String       @unique
+  phone                        String?
+  address                      String?
+  city                         String? // Italian city
+  postalCode                   String? // Italian postal code (CAP)
+  province                     String? // Italian province (2-letter code)
+  serviceId                    String
+  service                      Service      @relation(fields: [serviceId], references: [id])
+  branchId                     String
+  branch                       Branch       @relation(fields: [branchId], references: [id])
+  assignedEmployeeId           String?
+  assignedEmployee             Employee?    @relation(fields: [assignedEmployeeId], references: [id])
+  status                       ClientStatus @default(PENDING)
+  createdAt                    DateTime     @default(now())
+  updatedAt                    DateTime     @updatedAt
+  invoices                     Invoice[]
 
   @@map("clients")
 }
@@ -254,6 +256,7 @@ enum AttendanceStatus {
 }
 
 enum ClientStatus {
+  ACTIVE
   PENDING
   PROCESSING
   CANCELLED
