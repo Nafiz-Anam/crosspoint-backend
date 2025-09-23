@@ -240,6 +240,56 @@ const getUserAttendanceStats = catchAsync(async (req, res) => {
   });
 });
 
+const generateAttendanceReport = catchAsync(async (req, res) => {
+  const { employeeId } = req.params;
+  const { type, startDate, endDate } = req.body;
+
+  if (!employeeId) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Employee ID is required");
+  }
+
+  const reportData = await attendanceService.generateAttendanceReport(
+    employeeId,
+    type,
+    startDate ? new Date(startDate) : undefined,
+    endDate ? new Date(endDate) : undefined
+  );
+
+  // Set headers for Excel file download
+  const filename = `attendance-report-${employeeId}-${
+    new Date().toISOString().split("T")[0]
+  }.xlsx`;
+  res.setHeader(
+    "Content-Type",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+  );
+  res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+
+  res.send(reportData);
+});
+
+const getAttendanceReportData = catchAsync(async (req, res) => {
+  const { employeeId } = req.params;
+  const { type, startDate, endDate } = req.body;
+
+  if (!employeeId) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Employee ID is required");
+  }
+
+  const reportData = await attendanceService.getAttendanceReportData(
+    employeeId,
+    type,
+    startDate ? new Date(startDate) : undefined,
+    endDate ? new Date(endDate) : undefined
+  );
+
+  res.status(httpStatus.OK).json({
+    success: true,
+    message: "Attendance report data retrieved successfully",
+    data: reportData,
+  });
+});
+
 export default {
   checkIn,
   checkOut,
@@ -253,4 +303,6 @@ export default {
   getUserAttendance,
   getUserAttendanceRange,
   getUserAttendanceStats,
+  generateAttendanceReport,
+  getAttendanceReportData,
 };

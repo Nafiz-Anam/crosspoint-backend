@@ -10,7 +10,9 @@ const router = express.Router();
 router.use(auth());
 
 // Employee endpoints (for their own attendance)
-router.post("/check-in", auth(), attendanceController.checkIn);
+router
+  .route("/check-in")
+  .post(validate(attendanceValidation.checkIn), attendanceController.checkIn);
 
 router
   .route("/check-out")
@@ -36,6 +38,15 @@ router
     validate(attendanceValidation.getMyAttendanceStats),
     attendanceController.getMyAttendanceStats
   );
+
+// Attendance Report Routes
+router
+  .route("/report/:employeeId")
+  .post(attendanceController.generateAttendanceReport);
+
+router
+  .route("/report-data/:employeeId")
+  .post(attendanceController.getAttendanceReportData);
 
 // HR/Admin endpoints (for managing attendance)
 router

@@ -21,9 +21,19 @@ declare global {
       employeePermissions: PrismaPermission[]; // Array of Prisma Permission enum values
     }
 
+    // User interface for compatibility
+    interface User {
+      id: string;
+      email: string;
+      name?: string | null;
+      role: Role;
+      employeePermissions?: PrismaPermission[];
+    }
+
     // Extend the Request interface to include your custom properties
     interface Request {
       employee?: Employee; // The authenticated employee object
+      user?: User; // Alias for compatibility
       employeePermissions?: PrismaPermission[]; // The array of permissions for convenience
     }
   }

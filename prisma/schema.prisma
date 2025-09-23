@@ -55,6 +55,7 @@ model Employee {
   permissions                  Permission[] // Array of permissions (no relation needed)
   Client                       Client[]
   Invoice                      Invoice[]
+  assignedTasks                Task[]
 
   @@map("employees")
 }
@@ -85,6 +86,7 @@ model Service {
   updatedAt    DateTime      @updatedAt
   clients      Client[]
   invoiceItems InvoiceItem[]
+  tasks        Task[]
 
   @@map("services")
 }
@@ -110,6 +112,7 @@ model Client {
   createdAt                    DateTime     @default(now())
   updatedAt                    DateTime     @updatedAt
   invoices                     Invoice[]
+  tasks                        Task[]
 
   @@map("clients")
 }
@@ -119,6 +122,8 @@ model Invoice {
   invoiceId      String?       @unique // Format: INV-BR001-2024-001, INV-BR002-2024-001, etc.
   clientId       String
   client         Client        @relation(fields: [clientId], references: [id])
+  taskId         String? // Optional: Invoice can be generated from a task
+  task           Task?         @relation(fields: [taskId], references: [id])
   invoiceNumber  String        @unique
   totalAmount    Float
   subTotalAmount Float
@@ -141,6 +146,16 @@ model Invoice {
   paymentMethod  String        @default("Internet Banking") // Added: Payment method
   bankAccountId  String?
   bankAccount    BankAccount?  @relation(fields: [bankAccountId], references: [id])
+
+  // Company Information Fields
+  companyName    String? // Company name
+  companyTagline String? // Company tagline
+  companyAddress String? // Company address
+  companyCity    String? // Company city
+  companyPhone   String? // Company phone
+  companyEmail   String? // Company email
+  companyWebsite String? // Company website
+  companyLogo    String? // Company logo URL
 
   @@map("invoices")
 }
@@ -187,6 +202,32 @@ model BankAccount {
   @@map("bank_accounts")
 }
 
+model Task {
+  id                 String       @id @default(uuid())
+  taskId             String?      @unique // Format: TSK-BR001-2024-001, TSK-BR002-2024-001, etc.
+  title              String
+  description        String?
+  clientId           String
+  client             Client       @relation(fields: [clientId], references: [id])
+  serviceId          String
+  service            Service      @relation(fields: [serviceId], references: [id])
+  assignedEmployeeId String
+  assignedEmployee   Employee     @relation(fields: [assignedEmployeeId], references: [id])
+  status             TaskStatus   @default(PENDING)
+  priority           TaskPriority @default(MEDIUM)
+  dueDate            DateTime?
+  startDate          DateTime?
+  completedDate      DateTime?
+  estimatedHours     Float?
+  actualHours        Float?
+  notes              String?
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+  invoices           Invoice[]
+
+  @@map("tasks")
+}
+
 enum Role {
   ADMIN
   HR
@@ -219,6 +260,13 @@ enum Permission {
   READ_INVOICE
   UPDATE_INVOICE
   DELETE_INVOICE
+
+  // Task Management
+  CREATE_TASK
+  READ_TASK
+  UPDATE_TASK
+  DELETE_TASK
+  ASSIGN_TASK
 
   // Bank Account Management
   CREATE_BANK_ACCOUNT
@@ -261,4 +309,19 @@ enum ClientStatus {
   PROCESSING
   CANCELLED
   COMPLETED
+}
+
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  ON_HOLD
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
 }

@@ -8,8 +8,10 @@ import invoiceRoute from "./InvoiceRoute/invoice.route";
 import branchRoute from "./BranchRoute/branch.route";
 import attendanceRoute from "./AttendanceRoute/attendance.route";
 import bankAccountRoute from "./BankAccountRoute/bankAccount.route";
+import companyInfoRoute from "./CompanyInfoRoute/companyInfo.route";
 import dashboardRoute from "./DashboardRoute/dashboard.route";
 import profileRoute from "./ProfileRoute/profile.route";
+import taskRoute from "./task.route";
 
 const router = express.Router();
 
@@ -51,12 +53,20 @@ const defaultRoutes = [
     route: bankAccountRoute,
   },
   {
+    path: "/company-info",
+    route: companyInfoRoute,
+  },
+  {
     path: "/dashboard",
     route: dashboardRoute,
   },
   {
     path: "/profile",
     route: profileRoute,
+  },
+  {
+    path: "/tasks",
+    route: taskRoute,
   },
 ];
 

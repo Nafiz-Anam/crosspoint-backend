@@ -16,6 +16,7 @@ const verifyCallback =
       );
     }
     req.employee = user;
+    req.user = user; // For compatibility
     resolve();
   };
 

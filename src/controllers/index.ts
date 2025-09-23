@@ -8,3 +8,4 @@ export { default as branchController } from "./branch.controller";
 export { default as bankAccountController } from "./bankAccount.controller";
 export * as dashboardController from "./dashboard.controller";
 export { default as profileController } from "./profile.controller";
+export * as taskController from "./task.controller";

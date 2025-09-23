@@ -35,6 +35,9 @@ const envVarsSchema = Joi.object()
     EMAIL_FROM: Joi.string().description(
       "the from field in the emails sent by the app"
     ),
+    BASE_URL: Joi.string()
+      .default("http://localhost:8000")
+      .description("Base URL for the application"),
   })
   .unknown();
 
@@ -70,4 +73,5 @@ export default {
     },
     from: envVars.EMAIL_FROM,
   },
+  baseUrl: envVars.BASE_URL,
 };

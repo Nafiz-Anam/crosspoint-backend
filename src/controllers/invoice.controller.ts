@@ -158,7 +158,45 @@ const updateInvoice = catchAsync(async (req, res) => {
     throw new ApiError(httpStatus.BAD_REQUEST, "Invalid invoice status");
   }
 
-  const invoice = await invoiceService.updateInvoiceById(invoiceId, updateData);
+  // Transform the update data to match Prisma schema
+  const transformedUpdateData = { ...updateData };
+
+  // Convert ID fields to nested connect objects
+  if (updateData.clientId) {
+    transformedUpdateData.client = { connect: { id: updateData.clientId } };
+    delete transformedUpdateData.clientId;
+  }
+
+  if (updateData.branchId) {
+    transformedUpdateData.branch = { connect: { id: updateData.branchId } };
+    delete transformedUpdateData.branchId;
+  }
+
+  if (updateData.employeeId) {
+    transformedUpdateData.employee = { connect: { id: updateData.employeeId } };
+    delete transformedUpdateData.employeeId;
+  }
+
+  // Handle bank account fields - remove them as they should be handled through bankAccount relationship
+  if (updateData.bankAccountId) {
+    transformedUpdateData.bankAccount = {
+      connect: { id: updateData.bankAccountId },
+    };
+    delete transformedUpdateData.bankAccountId;
+  }
+
+  // Remove bank detail fields that don't exist in the invoice schema
+  delete transformedUpdateData.bankName;
+  delete transformedUpdateData.bankCountry;
+  delete transformedUpdateData.bankIban;
+  delete transformedUpdateData.bankSwiftCode;
+
+  // Company info fields are already in the correct format, no transformation needed
+
+  const invoice = await invoiceService.updateInvoiceById(
+    invoiceId,
+    transformedUpdateData
+  );
 
   sendResponse(
     res,
@@ -326,8 +364,46 @@ const getInvoiceStats = catchAsync(async (req, res) => {
   );
 });
 
+const createInvoiceFromTask = catchAsync(async (req, res) => {
+  const { taskId } = req.params;
+  const {
+    dueDate,
+    notes,
+    thanksMessage,
+    paymentTerms,
+    taxRate,
+    discountAmount,
+    paymentMethod,
+    bankAccountId,
+  } = req.body;
+
+  if (!dueDate) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Due date is required");
+  }
+
+  const invoice = await invoiceService.createInvoiceFromTask(taskId, {
+    dueDate: new Date(dueDate),
+    notes,
+    thanksMessage,
+    paymentTerms,
+    taxRate,
+    discountAmount,
+    paymentMethod,
+    bankAccountId,
+  });
+
+  sendResponse(
+    res,
+    httpStatus.CREATED,
+    true,
+    { invoice },
+    "Invoice created from task successfully"
+  );
+});
+
 export default {
   createInvoice,
+  createInvoiceFromTask,
   getInvoices,
   getInvoice,
   updateInvoice,

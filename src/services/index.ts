@@ -9,3 +9,5 @@ export { default as invoiceService } from "./invoice.service";
 export { default as branchService } from "./branch.service";
 export { default as attendanceService } from "./attendance.service";
 export { default as bankAccountService } from "./bankAccount.service";
+export { default as companyInfoService } from "./companyInfo.service";
+export * as taskService from "./task.service";

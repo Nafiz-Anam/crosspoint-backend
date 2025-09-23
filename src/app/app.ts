@@ -4,6 +4,7 @@ import compression from "compression";
 import cors from "cors";
 import passport from "passport";
 import httpStatus from "http-status";
+import path from "path";
 import config from "../config/config";
 import morgan from "../config/morgan";
 import xss from "../middlewares/xss";
@@ -25,14 +26,14 @@ if (config.env !== "test") {
 // set security HTTP headers
 app.use(helmet());
 
-// parse json request body
-app.use(express.json());
+// parse json request body with increased limit for image uploads
+app.use(express.json({ limit: "10mb" }));
 
 // parse cookie request
 app.use(cookieParser());
 
-// parse urlencoded request body
-app.use(express.urlencoded({ extended: true }));
+// parse urlencoded request body with increased limit
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
 // sanitize request data
 app.use(xss());
@@ -58,6 +59,12 @@ setupSwaggerDocs(app);
 
 // v1 api routes
 app.use("/v1", routes);
+
+// Serve static files from uploads directory
+app.use(
+  "/uploads",
+  express.static(path.join(process.cwd(), "public", "uploads"))
+);
 
 // default welcome route
 app.get("/", (req, res) => {

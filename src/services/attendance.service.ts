@@ -371,7 +371,7 @@ const markAttendance = async (
         notes,
       },
       include: {
-          employee: {
+        employee: {
           select: {
             id: true,
             employeeId: true,
@@ -491,6 +491,336 @@ const getBranchAttendanceStats = async (
   };
 };
 
+const generateAttendanceReport = async (
+  employeeId: string,
+  reportType: string,
+  startDate?: Date,
+  endDate?: Date
+): Promise<Buffer> => {
+  const XLSX = require("xlsx");
+
+  // Get employee details
+  const employee = await prisma.employee.findUnique({
+    where: { id: employeeId },
+    include: {
+      branch: {
+        select: {
+          name: true,
+          city: true,
+        },
+      },
+    },
+  });
+
+  if (!employee) {
+    throw new ApiError(StatusCodes.NOT_FOUND, "Employee not found");
+  }
+
+  // Calculate date range based on report type
+  let reportStartDate: Date;
+  let reportEndDate: Date;
+
+  const now = new Date();
+
+  switch (reportType) {
+    case "currentMonth":
+      reportStartDate = new Date(now.getFullYear(), now.getMonth(), 1);
+      reportEndDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      break;
+    case "previousMonth":
+      const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      reportStartDate = new Date(
+        prevMonth.getFullYear(),
+        prevMonth.getMonth(),
+        1
+      );
+      reportEndDate = new Date(
+        prevMonth.getFullYear(),
+        prevMonth.getMonth() + 1,
+        0
+      );
+      break;
+    case "specificMonth":
+    case "customRange":
+      if (!startDate || !endDate) {
+        throw new ApiError(
+          StatusCodes.BAD_REQUEST,
+          "Start date and end date are required"
+        );
+      }
+      reportStartDate = startDate;
+      reportEndDate = endDate;
+      break;
+    default:
+      throw new ApiError(StatusCodes.BAD_REQUEST, "Invalid report type");
+  }
+
+  // Get attendance data for the period
+  const attendanceRecords = await prisma.attendance.findMany({
+    where: {
+      employeeId: employeeId,
+      date: {
+        gte: reportStartDate,
+        lte: reportEndDate,
+      },
+    },
+    orderBy: {
+      date: "asc",
+    },
+  });
+
+  // Prepare data for Excel
+  const excelData = [];
+
+  // Add employee information header
+  excelData.push(["EMPLOYEE ATTENDANCE REPORT"]);
+  excelData.push([]);
+  excelData.push(["Employee Information"]);
+  excelData.push(["Name:", employee.name || "N/A"]);
+  excelData.push(["Employee ID:", employee.employeeId || "N/A"]);
+  excelData.push(["Email:", employee.email]);
+  excelData.push(["Branch:", employee.branch?.name || "N/A"]);
+  excelData.push(["City:", employee.branch?.city || "N/A"]);
+  excelData.push([
+    "Report Period:",
+    `${reportStartDate.toLocaleDateString()} - ${reportEndDate.toLocaleDateString()}`,
+  ]);
+  excelData.push(["Generated On:", new Date().toLocaleString()]);
+  excelData.push([]);
+
+  // Add attendance data headers
+  excelData.push([
+    "Date",
+    "Day",
+    "Check In",
+    "Check Out",
+    "Total Hours",
+    "Status",
+    "Notes",
+  ]);
+
+  // Add attendance records
+  attendanceRecords.forEach((record) => {
+    const checkInTime = record.checkIn
+      ? record.checkIn.toLocaleTimeString("en-US", {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: true,
+        })
+      : "N/A";
+
+    const checkOutTime = record.checkOut
+      ? record.checkOut.toLocaleTimeString("en-US", {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: true,
+        })
+      : "N/A";
+
+    const totalHours = record.totalHours
+      ? `${record.totalHours.toFixed(2)} hrs`
+      : "N/A";
+
+    const dayName = record.date.toLocaleDateString("en-US", {
+      weekday: "long",
+    });
+
+    excelData.push([
+      record.date.toLocaleDateString(),
+      dayName,
+      checkInTime,
+      checkOutTime,
+      totalHours,
+      record.status,
+      record.notes || "N/A",
+    ]);
+  });
+
+  // Add summary
+  excelData.push([]);
+  excelData.push(["SUMMARY"]);
+  excelData.push(["Total Working Days:", attendanceRecords.length]);
+  excelData.push([
+    "Total Hours Worked:",
+    attendanceRecords
+      .reduce((sum, record) => sum + (record.totalHours || 0), 0)
+      .toFixed(2),
+  ]);
+
+  const presentDays = attendanceRecords.filter(
+    (record) => record.status === "PRESENT"
+  ).length;
+  const lateDays = attendanceRecords.filter(
+    (record) => record.status === "LATE"
+  ).length;
+  const halfDays = attendanceRecords.filter(
+    (record) => record.status === "HALF_DAY"
+  ).length;
+  const absentDays = attendanceRecords.filter(
+    (record) => record.status === "ABSENT"
+  ).length;
+
+  excelData.push(["Present Days:", presentDays]);
+  excelData.push(["Late Days:", lateDays]);
+  excelData.push(["Half Days:", halfDays]);
+  excelData.push(["Absent Days:", absentDays]);
+
+  // Create workbook and worksheet
+  const workbook = XLSX.utils.book_new();
+  const worksheet = XLSX.utils.aoa_to_sheet(excelData);
+
+  // Set column widths
+  const columnWidths = [
+    { wch: 12 }, // Date
+    { wch: 12 }, // Day
+    { wch: 12 }, // Check In
+    { wch: 12 }, // Check Out
+    { wch: 12 }, // Total Hours
+    { wch: 12 }, // Status
+    { wch: 30 }, // Notes
+  ];
+  worksheet["!cols"] = columnWidths;
+
+  // Add worksheet to workbook
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Attendance Report");
+
+  // Generate Excel file buffer
+  const excelBuffer = XLSX.write(workbook, {
+    type: "buffer",
+    bookType: "xlsx",
+  });
+
+  return excelBuffer;
+};
+
+const getAttendanceReportData = async (
+  employeeId: string,
+  reportType: string,
+  startDate?: Date,
+  endDate?: Date
+): Promise<any> => {
+  // Get employee details
+  const employee = await prisma.employee.findUnique({
+    where: { id: employeeId },
+    include: {
+      branch: {
+        select: {
+          name: true,
+          city: true,
+        },
+      },
+    },
+  });
+
+  if (!employee) {
+    throw new ApiError(StatusCodes.NOT_FOUND, "Employee not found");
+  }
+
+  // Calculate date range based on report type
+  let reportStartDate: Date;
+  let reportEndDate: Date;
+
+  const now = new Date();
+
+  switch (reportType) {
+    case "currentMonth":
+      reportStartDate = new Date(now.getFullYear(), now.getMonth(), 1);
+      reportEndDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      break;
+    case "previousMonth":
+      const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      reportStartDate = new Date(
+        prevMonth.getFullYear(),
+        prevMonth.getMonth(),
+        1
+      );
+      reportEndDate = new Date(
+        prevMonth.getFullYear(),
+        prevMonth.getMonth() + 1,
+        0
+      );
+      break;
+    case "specificMonth":
+    case "customRange":
+      if (!startDate || !endDate) {
+        throw new ApiError(
+          StatusCodes.BAD_REQUEST,
+          "Start date and end date are required"
+        );
+      }
+      reportStartDate = startDate;
+      reportEndDate = endDate;
+      break;
+    default:
+      throw new ApiError(StatusCodes.BAD_REQUEST, "Invalid report type");
+  }
+
+  // Get attendance data for the period
+  const attendanceRecords = await prisma.attendance.findMany({
+    where: {
+      employeeId: employeeId,
+      date: {
+        gte: reportStartDate,
+        lte: reportEndDate,
+      },
+    },
+    orderBy: {
+      date: "asc",
+    },
+  });
+
+  // Calculate summary statistics
+  const totalWorkingDays = attendanceRecords.length;
+  const totalHoursWorked = attendanceRecords.reduce(
+    (sum, record) => sum + (record.totalHours || 0),
+    0
+  );
+  const presentDays = attendanceRecords.filter(
+    (record) => record.status === "PRESENT"
+  ).length;
+  const lateDays = attendanceRecords.filter(
+    (record) => record.status === "LATE"
+  ).length;
+  const halfDays = attendanceRecords.filter(
+    (record) => record.status === "HALF_DAY"
+  ).length;
+  const absentDays = attendanceRecords.filter(
+    (record) => record.status === "ABSENT"
+  ).length;
+
+  return {
+    employee: {
+      id: employee.id,
+      name: employee.name,
+      employeeId: employee.employeeId,
+      email: employee.email,
+      branch: employee.branch?.name,
+      city: employee.branch?.city,
+    },
+    reportPeriod: {
+      startDate: reportStartDate,
+      endDate: reportEndDate,
+      type: reportType,
+    },
+    attendanceRecords: attendanceRecords.map((record) => ({
+      date: record.date,
+      checkIn: record.checkIn,
+      checkOut: record.checkOut,
+      totalHours: record.totalHours,
+      status: record.status,
+      notes: record.notes,
+    })),
+    summary: {
+      totalWorkingDays,
+      totalHoursWorked: parseFloat(totalHoursWorked.toFixed(2)),
+      presentDays,
+      lateDays,
+      halfDays,
+      absentDays,
+    },
+  };
+};
+
 export default {
   checkIn,
   checkOut,
@@ -501,4 +831,6 @@ export default {
   markAttendance,
   getUserAttendanceStats,
   getBranchAttendanceStats,
+  generateAttendanceReport,
+  getAttendanceReportData,
 };

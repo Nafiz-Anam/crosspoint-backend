@@ -6,3 +6,4 @@ export { default as invoiceValidation } from "./invoice.validation";
 export { bankAccountValidation } from "./bankAccount.validation";
 export { dashboardValidation } from "./dashboard.validation";
 export { profileValidation } from "./profile.validation";
+export * as taskValidation from "./task.validation";

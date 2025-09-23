@@ -73,6 +73,15 @@ const updateInvoice = {
       bankCountry: Joi.string().allow("", null),
       bankIban: Joi.string().allow("", null),
       bankSwiftCode: Joi.string().allow("", null),
+      // Company Information Fields
+      companyName: Joi.string().optional().max(100),
+      companyTagline: Joi.string().optional().max(200),
+      companyAddress: Joi.string().optional().max(200),
+      companyCity: Joi.string().optional().max(100),
+      companyPhone: Joi.string().optional().max(50),
+      companyEmail: Joi.string().email().optional(),
+      companyWebsite: Joi.string().optional().max(100),
+      companyLogo: Joi.string().optional().allow(""),
     })
     .min(1),
 };

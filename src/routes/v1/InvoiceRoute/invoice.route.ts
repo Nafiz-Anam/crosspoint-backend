@@ -79,6 +79,13 @@ router
     invoiceController.updateInvoiceItems
   );
 
+router
+  .route("/from-task/:taskId")
+  .post(
+    requirePermission(Permission.CREATE_INVOICE),
+    invoiceController.createInvoiceFromTask
+  );
+
 export default router;
 
 /**

@@ -14,6 +14,7 @@ interface CreateInvoiceData {
   clientId: string;
   branchId: string;
   employeeId: string; // Required field
+  taskId?: string; // Optional: Link to task
   invoiceNumber?: string;
   dueDate: Date;
   items: InvoiceItemData[];
@@ -230,6 +231,7 @@ const createInvoice = async (
         clientId: invoiceData.clientId,
         branchId: invoiceData.branchId,
         employeeId: invoiceData.employeeId,
+        taskId: invoiceData.taskId,
         invoiceNumber,
         invoiceId,
         subTotalAmount,
@@ -531,8 +533,95 @@ const updateInvoiceStatus = async (
   return updatedInvoice;
 };
 
+/**
+ * Create an invoice from a task
+ * @param {string} taskId
+ * @param {Object} invoiceOptions
+ * @returns {Promise<Invoice>}
+ */
+const createInvoiceFromTask = async (
+  taskId: string,
+  invoiceOptions: {
+    dueDate: Date;
+    notes?: string;
+    thanksMessage?: string;
+    paymentTerms?: string;
+    taxRate?: number;
+    discountAmount?: number;
+    paymentMethod?: string;
+    bankAccountId?: string;
+  }
+): Promise<Invoice> => {
+  // Get task with related data
+  const task = await prisma.task.findUnique({
+    where: { id: taskId },
+    include: {
+      client: {
+        include: {
+          branch: true,
+        },
+      },
+      service: true,
+      assignedEmployee: true,
+    },
+  });
+
+  if (!task) {
+    throw new ApiError(httpStatus.NOT_FOUND, "Task not found");
+  }
+
+  // Check if task is completed
+  if (task.status !== "COMPLETED") {
+    throw new ApiError(
+      httpStatus.BAD_REQUEST,
+      "Cannot create invoice for incomplete task"
+    );
+  }
+
+  // Check if invoice already exists for this task
+  const existingInvoice = await prisma.invoice.findFirst({
+    where: { taskId },
+  });
+
+  if (existingInvoice) {
+    throw new ApiError(
+      httpStatus.BAD_REQUEST,
+      "Invoice already exists for this task"
+    );
+  }
+
+  // Create invoice data from task
+  const invoiceData: CreateInvoiceData = {
+    clientId: task.clientId,
+    branchId: task.client.branchId,
+    employeeId: task.assignedEmployeeId,
+    taskId: task.id,
+    dueDate: invoiceOptions.dueDate,
+    items: [
+      {
+        serviceId: task.serviceId,
+        description: `${task.service.name} - ${task.title}`,
+        rate: task.service.price,
+        discount: 0,
+      },
+    ],
+    notes:
+      invoiceOptions.notes || task.notes || `Invoice for task: ${task.title}`,
+    thanksMessage:
+      invoiceOptions.thanksMessage || "Thank you for your business!",
+    paymentTerms: invoiceOptions.paymentTerms,
+    taxRate: invoiceOptions.taxRate,
+    discountAmount: invoiceOptions.discountAmount,
+    paymentMethod: invoiceOptions.paymentMethod,
+    bankAccountId: invoiceOptions.bankAccountId,
+  };
+
+  return createInvoice(invoiceData);
+};
+
 export default {
   createInvoice,
+  createInvoiceFromTask,
   queryInvoices,
   getInvoiceById,
   updateInvoiceById,
