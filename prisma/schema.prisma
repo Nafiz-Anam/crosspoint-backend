@@ -82,6 +82,7 @@ model Service {
   serviceId    String
   name         String
   price        Float // Added price field
+  category     String? // Service category
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   clients      Client[]

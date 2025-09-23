@@ -7,3 +7,4 @@ export { bankAccountValidation } from "./bankAccount.validation";
 export { dashboardValidation } from "./dashboard.validation";
 export { profileValidation } from "./profile.validation";
 export * as taskValidation from "./task.validation";
+export { serviceValidation } from "./service.validation";

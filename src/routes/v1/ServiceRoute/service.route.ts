@@ -6,6 +6,8 @@ import {
 } from "../../../middlewares/permission";
 import { Permission } from "@prisma/client";
 import { serviceController } from "../../../controllers";
+import { validate } from "../../../middlewares/validate";
+import { serviceValidation } from "../../../validations/service.validation";
 
 const router = express.Router();
 
@@ -17,6 +19,7 @@ router
   .route("/")
   .post(
     requirePermission(Permission.CREATE_SERVICE),
+    validate(serviceValidation.createService.body, "body"),
     serviceController.createService
   )
   .get(
@@ -26,13 +29,20 @@ router
 
 router
   .route("/:serviceId")
-  .get(requirePermission(Permission.READ_SERVICE), serviceController.getService)
+  .get(
+    requirePermission(Permission.READ_SERVICE),
+    validate(serviceValidation.getService.params, "params"),
+    serviceController.getService
+  )
   .put(
     requirePermission(Permission.UPDATE_SERVICE),
+    validate(serviceValidation.updateService.body, "body"),
+    validate(serviceValidation.updateService.params, "params"),
     serviceController.updateService
   )
   .delete(
     requirePermission(Permission.DELETE_SERVICE),
+    validate(serviceValidation.deleteService.params, "params"),
     serviceController.deleteService
   );
 

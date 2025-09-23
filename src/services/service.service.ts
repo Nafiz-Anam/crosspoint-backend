@@ -9,7 +9,11 @@ import branchService from "./branch.service";
  * @param {Object} serviceBody
  * @returns {Promise<Service>}
  */
-const createService = async (name: string, price: number): Promise<Service> => {
+const createService = async (
+  name: string,
+  price: number,
+  category?: string
+): Promise<Service> => {
   // Check if service with same name already exists
   const existingService = await prisma.service.findFirst({
     where: { name },
@@ -31,6 +35,7 @@ const createService = async (name: string, price: number): Promise<Service> => {
       serviceId: serviceId, // Assign the generated service ID
       name,
       price,
+      category,
     },
   });
 };

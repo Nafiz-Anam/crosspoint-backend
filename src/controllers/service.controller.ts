@@ -6,8 +6,8 @@ import { serviceService } from "../services";
 import sendResponse from "../utils/responseHandler";
 
 const createService = catchAsync(async (req, res) => {
-  const { name, price } = req.body;
-  const service = await serviceService.createService(name, price);
+  const { name, price, category } = req.body;
+  const service = await serviceService.createService(name, price, category);
 
   sendResponse(
     res,
