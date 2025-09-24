@@ -21,6 +21,15 @@ const createInvoice = catchAsync(async (req, res) => {
     discountAmount,
     paymentMethod,
     bankAccountId,
+    // Company Information Fields
+    companyName,
+    companyTagline,
+    companyAddress,
+    companyCity,
+    companyPhone,
+    companyEmail,
+    companyWebsite,
+    companyLogo,
   } = req.body;
 
   // Validate required fields
@@ -63,6 +72,15 @@ const createInvoice = catchAsync(async (req, res) => {
     discountAmount: discountAmount || 0,
     paymentMethod,
     bankAccountId,
+    // Company Information Fields
+    companyName,
+    companyTagline,
+    companyAddress,
+    companyCity,
+    companyPhone,
+    companyEmail,
+    companyWebsite,
+    companyLogo,
   });
 
   sendResponse(
@@ -158,6 +176,48 @@ const updateInvoice = catchAsync(async (req, res) => {
     throw new ApiError(httpStatus.BAD_REQUEST, "Invalid invoice status");
   }
 
+  // Handle items update if provided
+  if (updateData.items && Array.isArray(updateData.items)) {
+    // Validate each item
+    for (const item of updateData.items) {
+      if (!item.serviceId || !item.description || !item.rate) {
+        throw new ApiError(
+          httpStatus.BAD_REQUEST,
+          "Each item must have serviceId, description, and rate"
+        );
+      }
+
+      if (item.rate <= 0) {
+        throw new ApiError(
+          httpStatus.BAD_REQUEST,
+          "Rate must be greater than 0"
+        );
+      }
+
+      if (item.discount && item.discount < 0) {
+        throw new ApiError(
+          httpStatus.BAD_REQUEST,
+          "Discount cannot be negative"
+        );
+      }
+    }
+
+    // Use the service method that handles items update with recalculation
+    const invoice = await invoiceService.updateInvoiceWithItems(
+      invoiceId,
+      updateData
+    );
+
+    sendResponse(
+      res,
+      httpStatus.OK,
+      true,
+      { invoice },
+      "Invoice updated successfully"
+    );
+    return;
+  }
+
   // Transform the update data to match Prisma schema
   const transformedUpdateData = { ...updateData };
 
@@ -204,55 +264,6 @@ const updateInvoice = catchAsync(async (req, res) => {
     true,
     { invoice },
     "Invoice updated successfully"
-  );
-});
-
-const updateInvoiceItems = catchAsync(async (req, res) => {
-  const { invoiceId } = req.params;
-  const { items, taxRate, discountAmount } = req.body;
-
-  if (!invoiceId) {
-    throw new ApiError(httpStatus.BAD_REQUEST, "Invoice ID is required");
-  }
-
-  if (!items || !Array.isArray(items) || items.length === 0) {
-    throw new ApiError(
-      httpStatus.BAD_REQUEST,
-      "Items array is required and cannot be empty"
-    );
-  }
-
-  // Validate each item
-  for (const item of items) {
-    if (!item.serviceId || !item.description || !item.rate) {
-      throw new ApiError(
-        httpStatus.BAD_REQUEST,
-        "Each item must have serviceId, description, and rate"
-      );
-    }
-
-    if (item.rate <= 0) {
-      throw new ApiError(httpStatus.BAD_REQUEST, "Rate must be greater than 0");
-    }
-
-    if (item.discount && item.discount < 0) {
-      throw new ApiError(httpStatus.BAD_REQUEST, "Discount cannot be negative");
-    }
-  }
-
-  const invoice = await invoiceService.updateInvoiceItems(
-    invoiceId,
-    items,
-    taxRate || 0,
-    discountAmount || 0
-  );
-
-  sendResponse(
-    res,
-    httpStatus.OK,
-    true,
-    { invoice },
-    "Invoice items updated successfully"
   );
 });
 
@@ -407,7 +418,6 @@ export default {
   getInvoices,
   getInvoice,
   updateInvoice,
-  updateInvoiceItems,
   deleteInvoice,
   updateInvoiceStatus,
   generateInvoiceNumber,

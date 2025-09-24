@@ -183,7 +183,33 @@ const getDashboardStats = catchAsync(async (req: Request, res: Response) => {
   );
 });
 
-// Get weekly earnings data for charts
+// Get earnings data for charts based on period
+const getEarningsData = catchAsync(async (req: Request, res: Response) => {
+  const { branchId, period = "week" } = req.query;
+
+  // Import the service function
+  const { getEarningsData: getEarningsDataService } = await import(
+    "../services/dashboard.service"
+  );
+
+  const result = await getEarningsDataService({
+    branchId: branchId as string,
+    period: period as string,
+  });
+
+  const periodStr = typeof period === "string" ? period : "week";
+  sendResponse(
+    res,
+    httpStatus.OK,
+    true,
+    result,
+    `${
+      periodStr.charAt(0).toUpperCase() + periodStr.slice(1)
+    } earnings data retrieved successfully`
+  );
+});
+
+// Get weekly earnings data for charts (backward compatibility)
 const getWeeklyEarnings = catchAsync(async (req: Request, res: Response) => {
   const { branchId } = req.query;
 
@@ -517,6 +543,7 @@ const getProjectStatusFromInvoice = (invoiceStatus: string): number => {
 export {
   getDashboardStats,
   getWeeklyEarnings,
+  getEarningsData,
   getInvoiceStats,
   getProjectsOverview,
 };

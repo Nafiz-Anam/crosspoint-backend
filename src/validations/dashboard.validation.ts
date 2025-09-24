@@ -13,6 +13,12 @@ export const dashboardValidation = {
       branchId: Joi.string().uuid().optional(),
     }),
   },
+  getEarningsData: {
+    query: Joi.object().keys({
+      branchId: Joi.string().uuid().optional(),
+      period: Joi.string().valid("week", "month", "year").optional(),
+    }),
+  },
   getInvoiceStats: {
     query: Joi.object().keys({
       branchId: Joi.string().uuid().optional(),

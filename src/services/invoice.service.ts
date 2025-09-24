@@ -25,6 +25,15 @@ interface CreateInvoiceData {
   discountAmount?: number;
   paymentMethod?: string;
   bankAccountId?: string;
+  // Company Information Fields
+  companyName?: string;
+  companyTagline?: string;
+  companyAddress?: string;
+  companyCity?: string;
+  companyPhone?: string;
+  companyEmail?: string;
+  companyWebsite?: string;
+  companyLogo?: string;
 }
 
 /**
@@ -246,6 +255,15 @@ const createInvoice = async (
         paymentTerms: invoiceData.paymentTerms,
         paymentMethod: invoiceData.paymentMethod || "Internet Banking",
         bankAccountId: invoiceData.bankAccountId,
+        // Company Information Fields
+        companyName: invoiceData.companyName,
+        companyTagline: invoiceData.companyTagline,
+        companyAddress: invoiceData.companyAddress,
+        companyCity: invoiceData.companyCity,
+        companyPhone: invoiceData.companyPhone,
+        companyEmail: invoiceData.companyEmail,
+        companyWebsite: invoiceData.companyWebsite,
+        companyLogo: invoiceData.companyLogo,
       },
     });
 
@@ -390,80 +408,123 @@ const updateInvoiceById = async (
 };
 
 /**
- * Update invoice items with recalculation
+ * Update invoice with items and recalculate totals
  * @param {string} invoiceId
- * @param {InvoiceItemData[]} items
- * @param {number} taxRate
- * @param {number} discountAmount
+ * @param {Object} updateData
  * @returns {Promise<Invoice | null>}
  */
-const updateInvoiceItems = async (
+const updateInvoiceWithItems = async (
   invoiceId: string,
-  items: InvoiceItemData[],
-  taxRate: number = 0,
-  discountAmount: number = 0
+  updateData: any
 ): Promise<Invoice | null> => {
   const invoice = await getInvoiceById(invoiceId);
   if (!invoice) {
     throw new ApiError(httpStatus.NOT_FOUND, "Invoice not found");
   }
 
-  // Validate all services exist
-  for (const item of items) {
-    const service = await prisma.service.findUnique({
-      where: { id: item.serviceId },
-    });
+  const { items, taxRate, discountAmount, ...otherData } = updateData;
 
-    if (!service) {
-      throw new ApiError(
-        httpStatus.BAD_REQUEST,
-        `Service with ID ${item.serviceId} not found`
-      );
+  // Validate all services exist if items are provided
+  if (items && Array.isArray(items)) {
+    for (const item of items) {
+      const service = await prisma.service.findUnique({
+        where: { id: item.serviceId },
+      });
+
+      if (!service) {
+        throw new ApiError(
+          httpStatus.BAD_REQUEST,
+          `Service with ID ${item.serviceId} not found`
+        );
+      }
     }
   }
 
-  const { subTotalAmount, taxAmount, totalAmount } = calculateInvoiceTotals(
-    items,
-    taxRate,
-    discountAmount
-  );
+  // Calculate new totals if items are provided
+  let calculatedTotals = {};
+  if (items && Array.isArray(items)) {
+    const { subTotalAmount, taxAmount, totalAmount } = calculateInvoiceTotals(
+      items,
+      taxRate || invoice.taxRate,
+      discountAmount || invoice.discountAmount
+    );
+
+    calculatedTotals = {
+      subTotalAmount,
+      taxAmount,
+      totalAmount,
+      taxRate: taxRate || invoice.taxRate,
+      discountAmount: discountAmount || invoice.discountAmount,
+    };
+  }
 
   // Update invoice and items in transaction
   const updatedInvoice = await prisma.$transaction(async (tx) => {
-    // Delete existing items
-    await tx.invoiceItem.deleteMany({
-      where: { invoiceId },
+    // Update invoice data
+    const invoiceUpdateData = {
+      ...otherData,
+      ...calculatedTotals,
+    };
+
+    // Transform ID fields to nested connect objects
+    if (otherData.clientId) {
+      invoiceUpdateData.client = { connect: { id: otherData.clientId } };
+      delete invoiceUpdateData.clientId;
+    }
+
+    if (otherData.branchId) {
+      invoiceUpdateData.branch = { connect: { id: otherData.branchId } };
+      delete invoiceUpdateData.branchId;
+    }
+
+    if (otherData.employeeId) {
+      invoiceUpdateData.employee = { connect: { id: otherData.employeeId } };
+      delete invoiceUpdateData.employeeId;
+    }
+
+    if (otherData.bankAccountId) {
+      invoiceUpdateData.bankAccount = {
+        connect: { id: otherData.bankAccountId },
+      };
+      delete invoiceUpdateData.bankAccountId;
+    }
+
+    // Update invoice
+    const updatedInvoice = await tx.invoice.update({
+      where: { id: invoiceId },
+      data: invoiceUpdateData,
     });
 
-    // Create new items
-    await Promise.all(
-      items.map((item) => {
-        const discount = item.discount || 0;
-        const total = calculateItemTotal(item.rate, discount);
+    // Update items if provided
+    if (items && Array.isArray(items)) {
+      // Delete existing items
+      await tx.invoiceItem.deleteMany({
+        where: { invoiceId },
+      });
 
-        return tx.invoiceItem.create({
-          data: {
-            invoiceId,
-            serviceId: item.serviceId,
-            description: item.description,
-            rate: item.rate,
-            discount: discount,
-            total: total,
-          },
-        });
-      })
-    );
+      // Create new items
+      await Promise.all(
+        items.map((item) => {
+          const discount = item.discount || 0;
+          const total = calculateItemTotal(item.rate, discount);
 
-    // Update invoice totals
-    return tx.invoice.update({
+          return tx.invoiceItem.create({
+            data: {
+              invoiceId,
+              serviceId: item.serviceId,
+              description: item.description,
+              rate: item.rate,
+              discount: discount,
+              total: total,
+            },
+          });
+        })
+      );
+    }
+
+    // Return updated invoice with relationships
+    return tx.invoice.findUnique({
       where: { id: invoiceId },
-      data: {
-        subTotalAmount,
-        discountAmount,
-        taxAmount,
-        taxRate,
-        totalAmount,
-      },
       include: {
         client: true,
         branch: true,
@@ -625,9 +686,9 @@ export default {
   queryInvoices,
   getInvoiceById,
   updateInvoiceById,
+  updateInvoiceWithItems,
   deleteInvoiceById,
   updateInvoiceStatus,
-  updateInvoiceItems,
   generateInvoiceNumber,
   calculateItemTotal,
   calculateInvoiceTotals,

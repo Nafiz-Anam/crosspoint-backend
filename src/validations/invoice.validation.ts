@@ -16,6 +16,15 @@ const createInvoice = {
     discountAmount: Joi.number().optional().min(0),
     paymentMethod: Joi.string().optional().allow("", null),
     bankAccountId: Joi.string().optional().custom(objectId),
+    // Company Information Fields
+    companyName: Joi.string().optional().max(100),
+    companyTagline: Joi.string().optional().max(200),
+    companyAddress: Joi.string().optional().max(200),
+    companyCity: Joi.string().optional().max(100),
+    companyPhone: Joi.string().optional().max(50),
+    companyEmail: Joi.string().email().optional(),
+    companyWebsite: Joi.string().optional().max(100),
+    companyLogo: Joi.string().optional().allow(""),
     items: Joi.array()
       .items(
         Joi.object().keys({
@@ -69,10 +78,7 @@ const updateInvoice = {
       taxRate: Joi.number().min(0).max(100),
       discountAmount: Joi.number().min(0),
       paymentMethod: Joi.string(),
-      bankName: Joi.string().allow("", null),
-      bankCountry: Joi.string().allow("", null),
-      bankIban: Joi.string().allow("", null),
-      bankSwiftCode: Joi.string().allow("", null),
+      bankAccountId: Joi.string().custom(objectId),
       // Company Information Fields
       companyName: Joi.string().optional().max(100),
       companyTagline: Joi.string().optional().max(200),
@@ -82,6 +88,18 @@ const updateInvoice = {
       companyEmail: Joi.string().email().optional(),
       companyWebsite: Joi.string().optional().max(100),
       companyLogo: Joi.string().optional().allow(""),
+      // Invoice Items
+      items: Joi.array()
+        .items(
+          Joi.object().keys({
+            serviceId: Joi.string().required().custom(objectId),
+            description: Joi.string().required().min(1),
+            rate: Joi.number().required().min(0),
+            discount: Joi.number().optional().min(0),
+          })
+        )
+        .optional()
+        .min(1),
     })
     .min(1),
 };
@@ -100,27 +118,6 @@ const updateInvoiceStatus = {
     status: Joi.string()
       .required()
       .valid(...Object.values(InvoiceStatus)),
-  }),
-};
-
-const updateInvoiceItems = {
-  params: Joi.object().keys({
-    invoiceId: Joi.string().required().custom(objectId),
-  }),
-  body: Joi.object().keys({
-    items: Joi.array()
-      .items(
-        Joi.object().keys({
-          serviceId: Joi.string().required().custom(objectId),
-          description: Joi.string().required().min(1),
-          rate: Joi.number().required().min(0),
-          discount: Joi.number().optional().min(0),
-        })
-      )
-      .required()
-      .min(1),
-    taxRate: Joi.number().optional().min(0).max(100),
-    discountAmount: Joi.number().optional().min(0),
   }),
 };
 
@@ -144,6 +141,5 @@ export default {
   updateInvoice,
   deleteInvoice,
   updateInvoiceStatus,
-  updateInvoiceItems,
   getInvoiceStats,
 };

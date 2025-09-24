@@ -33,6 +33,15 @@ router
     dashboardController.getWeeklyEarnings
   );
 
+// Earnings data route (supports week/month/year)
+router
+  .route("/earnings")
+  .get(
+    requirePermission(Permission.VIEW_REPORTS),
+    validate(dashboardValidation.getEarningsData.query, "query"),
+    dashboardController.getEarningsData
+  );
+
 // Invoice statistics route
 router
   .route("/invoice-stats")

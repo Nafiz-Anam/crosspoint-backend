@@ -189,14 +189,36 @@ const getDashboardStats = async (filters: {
   }
 };
 
-// Get weekly earnings data for charts
-const getWeeklyEarnings = async (filters: { branchId?: string }) => {
-  const { branchId } = filters;
+// Get earnings data for charts based on period
+const getEarningsData = async (filters: {
+  branchId?: string;
+  period?: string;
+}) => {
+  const { branchId, period = "week" } = filters;
 
-  // Get last 7 days of data
-  const endDate = new Date();
-  const startDate = new Date();
-  startDate.setDate(startDate.getDate() - 7);
+  let endDate = new Date();
+  let startDate = new Date();
+  let chartData = [];
+  let labels = [];
+  let periodTotal = 0;
+  let periodAverage = 0;
+  let growthPercentage = 0;
+  let previousPeriodTotal = 0;
+
+  // Set date range based on period
+  switch (period) {
+    case "week":
+      startDate.setDate(startDate.getDate() - 7);
+      break;
+    case "month":
+      startDate.setMonth(startDate.getMonth() - 1);
+      break;
+    case "year":
+      startDate.setFullYear(startDate.getFullYear() - 1);
+      break;
+    default:
+      startDate.setDate(startDate.getDate() - 7);
+  }
 
   const whereClause: any = {
     issuedDate: {
@@ -210,46 +232,109 @@ const getWeeklyEarnings = async (filters: { branchId?: string }) => {
   }
 
   try {
-    // Get daily earnings for the last 7 days
-    const dailyEarnings = await prisma.invoice.groupBy({
-      by: ["issuedDate"],
-      where: whereClause,
-      _sum: {
-        totalAmount: true,
-      },
-      orderBy: {
-        issuedDate: "asc",
-      },
-    });
+    let earningsData;
+    let dataPoints = 7; // Default to 7 for week
 
-    // Format data for chart
-    const chartData = [];
-    const labels = [];
+    if (period === "week") {
+      // Get daily earnings for the last 7 days
+      earningsData = await prisma.invoice.groupBy({
+        by: ["issuedDate"],
+        where: whereClause,
+        _sum: {
+          totalAmount: true,
+        },
+        orderBy: {
+          issuedDate: "asc",
+        },
+      });
 
-    for (let i = 6; i >= 0; i--) {
-      const date = new Date();
-      date.setDate(date.getDate() - i);
-      const dateStr = date.toISOString().split("T")[0];
+      dataPoints = 7;
+      for (let i = 6; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        const dateStr = date.toISOString().split("T")[0];
 
-      const dayEarnings = dailyEarnings.find(
-        (d) => d.issuedDate.toISOString().split("T")[0] === dateStr
-      );
+        const dayEarnings = earningsData.find(
+          (d) => d.issuedDate.toISOString().split("T")[0] === dateStr
+        );
 
-      chartData.push(dayEarnings?._sum.totalAmount || 0);
-      labels.push(date.toLocaleDateString("en-US", { weekday: "short" }));
+        chartData.push(dayEarnings?._sum.totalAmount || 0);
+        labels.push(date.toLocaleDateString("en-US", { weekday: "short" }));
+      }
+    } else if (period === "month") {
+      // Get weekly earnings for the last 4 weeks
+      const weeklyData = [];
+      dataPoints = 4;
+      for (let i = 3; i >= 0; i--) {
+        const weekStart = new Date();
+        weekStart.setDate(weekStart.getDate() - (i + 1) * 7);
+        const weekEnd = new Date();
+        weekEnd.setDate(weekEnd.getDate() - i * 7);
+
+        const weekEarnings = await prisma.invoice.aggregate({
+          where: {
+            ...whereClause,
+            issuedDate: {
+              gte: weekStart,
+              lte: weekEnd,
+            },
+          },
+          _sum: {
+            totalAmount: true,
+          },
+        });
+
+        const weekTotal = weekEarnings._sum.totalAmount || 0;
+        weeklyData.push(weekTotal);
+        chartData.push(weekTotal);
+        labels.push(`Week ${4 - i}`);
+      }
+      earningsData = weeklyData;
+    } else if (period === "year") {
+      // Get monthly earnings for the last 12 months
+      const monthlyData = [];
+      dataPoints = 12;
+      for (let i = 11; i >= 0; i--) {
+        const monthStart = new Date();
+        monthStart.setMonth(monthStart.getMonth() - i);
+        monthStart.setDate(1);
+        const monthEnd = new Date(monthStart);
+        monthEnd.setMonth(monthEnd.getMonth() + 1);
+        monthEnd.setDate(0);
+
+        const monthEarnings = await prisma.invoice.aggregate({
+          where: {
+            ...whereClause,
+            issuedDate: {
+              gte: monthStart,
+              lte: monthEnd,
+            },
+          },
+          _sum: {
+            totalAmount: true,
+          },
+        });
+
+        const monthTotal = monthEarnings._sum.totalAmount || 0;
+        monthlyData.push(monthTotal);
+        chartData.push(monthTotal);
+        labels.push(monthStart.toLocaleDateString("en-US", { month: "short" }));
+      }
+      earningsData = monthlyData;
     }
 
-    // Calculate weekly totals
-    const weeklyTotal = chartData.reduce((sum, amount) => sum + amount, 0);
-    const weeklyAverage = weeklyTotal / 7;
+    // Calculate period totals
+    periodTotal = chartData.reduce((sum, amount) => sum + amount, 0);
+    periodAverage = dataPoints > 0 ? periodTotal / dataPoints : 0;
 
-    // Get previous week for comparison
+    // Get previous period for comparison
     const prevStartDate = new Date(startDate);
     const prevEndDate = new Date(endDate);
-    prevStartDate.setDate(prevStartDate.getDate() - 7);
-    prevEndDate.setDate(prevEndDate.getDate() - 7);
+    const periodLength = endDate.getTime() - startDate.getTime();
+    prevStartDate.setTime(prevStartDate.getTime() - periodLength);
+    prevEndDate.setTime(prevEndDate.getTime() - periodLength);
 
-    const previousWeekRevenue = await prisma.invoice.aggregate({
+    const previousPeriodRevenue = await prisma.invoice.aggregate({
       where: {
         ...whereClause,
         issuedDate: {
@@ -262,26 +347,32 @@ const getWeeklyEarnings = async (filters: { branchId?: string }) => {
       },
     });
 
-    const previousWeekTotal = previousWeekRevenue._sum.totalAmount || 0;
-    const growthPercentage =
-      previousWeekTotal > 0
-        ? ((weeklyTotal - previousWeekTotal) / previousWeekTotal) * 100
+    previousPeriodTotal = previousPeriodRevenue._sum.totalAmount || 0;
+    growthPercentage =
+      previousPeriodTotal > 0
+        ? ((periodTotal - previousPeriodTotal) / previousPeriodTotal) * 100
         : 0;
 
     return {
       chartData,
       labels,
-      weeklyTotal,
-      weeklyAverage,
+      periodTotal,
+      periodAverage,
       growthPercentage,
-      previousWeekTotal,
+      previousPeriodTotal,
+      period,
     };
   } catch (error) {
     throw new ApiError(
       httpStatus.INTERNAL_SERVER_ERROR,
-      "Failed to fetch weekly earnings data"
+      `Failed to fetch ${period} earnings data`
     );
   }
+};
+
+// Get weekly earnings data for charts (backward compatibility)
+const getWeeklyEarnings = async (filters: { branchId?: string }) => {
+  return getEarningsData({ ...filters, period: "week" });
 };
 
 // Get invoice statistics for financial overview
@@ -527,6 +618,7 @@ const getProjectStatusFromInvoice = (invoiceStatus: string): number => {
 export {
   getDashboardStats,
   getWeeklyEarnings,
+  getEarningsData,
   getInvoiceStats,
   getProjectsOverview,
 };

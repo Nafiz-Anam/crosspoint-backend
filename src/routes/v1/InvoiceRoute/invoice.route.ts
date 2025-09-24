@@ -71,15 +71,6 @@ router
   );
 
 router
-  .route("/:invoiceId/items")
-  .patch(
-    requirePermission(Permission.UPDATE_INVOICE),
-    validate(invoiceValidation.updateInvoiceItems.params, "params"),
-    validate(invoiceValidation.updateInvoiceItems.body, "body"),
-    invoiceController.updateInvoiceItems
-  );
-
-router
   .route("/from-task/:taskId")
   .post(
     requirePermission(Permission.CREATE_INVOICE),
@@ -547,68 +538,6 @@ export default router;
  *         description: Invoice status updated successfully
  *       400:
  *         description: Invalid status or validation error
- *       404:
- *         description: Invoice not found
- *
- * /invoices/{invoiceId}/items:
- *   patch:
- *     summary: Update invoice items
- *     tags:
- *       - Invoices
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: invoiceId
- *         required: true
- *         schema:
- *           type: string
- *         description: Invoice ID
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - items
- *             properties:
- *               items:
- *                 type: array
- *                 items:
- *                   type: object
- *                   required:
- *                     - serviceId
- *                     - description
- *                     - rate
- *                   properties:
- *                     serviceId:
- *                       type: string
- *                       example: "uuid-service-id"
- *                     description:
- *                       type: string
- *                       example: "Updated service description"
- *                     rate:
- *                       type: number
- *                       format: float
- *                       example: 800.00
- *                     discount:
- *                       type: number
- *                       format: float
- *                       example: 0.00
- *               taxRate:
- *                 type: number
- *                 format: float
- *                 example: 15.0
- *               discountAmount:
- *                 type: number
- *                 format: float
- *                 example: 100.00
- *     responses:
- *       200:
- *         description: Invoice items updated successfully
- *       400:
- *         description: Validation error
  *       404:
  *         description: Invoice not found
  *
