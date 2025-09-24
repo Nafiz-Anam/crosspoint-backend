@@ -15,12 +15,7 @@ const createClient = {
     city: Joi.string().optional().allow(null, "").max(100),
     postalCode: Joi.string().optional().allow(null, "").max(20),
     province: Joi.string().optional().allow(null, "").length(2).uppercase(), // 2-letter Italian province code
-    serviceId: Joi.string().required().custom(objectId),
     branchId: Joi.string().required().custom(objectId),
-    assignedEmployeeId: Joi.string()
-      .optional()
-      .allow(null, "")
-      .custom(objectId),
     status: Joi.string()
       .valid("ACTIVE", "PENDING", "PROCESSING", "CANCELLED", "COMPLETED")
       .default("PENDING"),
@@ -35,9 +30,7 @@ const getClients = {
     phone: Joi.string(),
     city: Joi.string(),
     province: Joi.string().length(2).uppercase(),
-    serviceId: Joi.string().custom(objectId),
     branchId: Joi.string().custom(objectId),
-    assignedEmployeeId: Joi.string().custom(objectId),
     status: Joi.string().valid(
       "ACTIVE",
       "PENDING",
@@ -71,9 +64,7 @@ const updateClient = {
       city: Joi.string().allow(null, "").max(100),
       postalCode: Joi.string().allow(null, "").max(20),
       province: Joi.string().allow(null, "").length(2).uppercase(),
-      serviceId: Joi.string().custom(objectId),
       branchId: Joi.string().custom(objectId),
-      assignedEmployeeId: Joi.string().allow(null, "").custom(objectId),
       status: Joi.string().valid(
         "ACTIVE",
         "PENDING",
@@ -107,7 +98,6 @@ const bulkUpdateClients = {
           "CANCELLED",
           "COMPLETED"
         ),
-        assignedEmployeeId: Joi.string().allow(null, "").custom(objectId),
         branchId: Joi.string().custom(objectId),
       })
       .min(1)

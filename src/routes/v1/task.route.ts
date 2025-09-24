@@ -32,18 +32,18 @@ router
   .route("/:taskId")
   .get(
     requirePermission(Permission.READ_TASK),
-    validate(taskValidation.getTask.params),
+    validate(taskValidation.getTask.params, "params"),
     taskController.getTask
   )
   .patch(
     requirePermission(Permission.UPDATE_TASK),
-    validate(taskValidation.updateTask.params),
+    validate(taskValidation.updateTask.params, "params"),
     validate(taskValidation.updateTask.body),
     taskController.updateTask
   )
   .delete(
     requirePermission(Permission.DELETE_TASK),
-    validate(taskValidation.deleteTask.params),
+    validate(taskValidation.deleteTask.params, "params"),
     taskController.deleteTask
   );
 
@@ -51,7 +51,7 @@ router
   .route("/client/:clientId")
   .get(
     requirePermission(Permission.READ_TASK),
-    validate(taskValidation.getTasksByClient.params),
+    validate(taskValidation.getTasksByClient.params, "params"),
     taskController.getTasksByClient
   );
 

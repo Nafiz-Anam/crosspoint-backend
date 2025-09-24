@@ -4,7 +4,7 @@ import ApiError from "../utils/ApiError";
 import catchAsync from "../utils/catchAsync";
 import { taskService } from "../services";
 import sendResponse from "../utils/responseHandler";
-import { TaskStatus, TaskPriority } from "@prisma/client";
+import { TaskStatus } from "@prisma/client";
 
 const createTask = catchAsync(async (req, res) => {
   const {
@@ -13,7 +13,6 @@ const createTask = catchAsync(async (req, res) => {
     serviceId,
     assignedEmployeeId,
     status,
-    priority,
     dueDate,
     startDate,
     notes,
@@ -29,23 +28,12 @@ const createTask = catchAsync(async (req, res) => {
     );
   }
 
-  // Validate priority is a valid TaskPriority enum value
-  if (priority && !Object.values(TaskPriority).includes(priority)) {
-    throw new ApiError(
-      httpStatus.BAD_REQUEST,
-      `Invalid priority: "${priority}". Must be one of: ${Object.values(
-        TaskPriority
-      ).join(", ")}`
-    );
-  }
-
   const task = await taskService.createTask(
     clientId,
     serviceId,
     assignedEmployeeId,
     description,
     status || TaskStatus.PENDING,
-    priority || TaskPriority.MEDIUM,
     dueDate ? new Date(dueDate) : undefined,
     startDate ? new Date(startDate) : undefined,
     notes
@@ -64,7 +52,6 @@ const getTasks = catchAsync(async (req, res) => {
   const filter = pick(req.query, [
     "title",
     "status",
-    "priority",
     "clientId",
     "serviceId",
     "assignedEmployeeId",
@@ -147,19 +134,6 @@ const updateTask = catchAsync(async (req, res) => {
       `Invalid status: "${updateBody.status}". Must be one of: ${Object.values(
         TaskStatus
       ).join(", ")}`
-    );
-  }
-
-  // Validate priority is a valid TaskPriority enum value
-  if (
-    updateBody.priority &&
-    !Object.values(TaskPriority).includes(updateBody.priority)
-  ) {
-    throw new ApiError(
-      httpStatus.BAD_REQUEST,
-      `Invalid priority: "${
-        updateBody.priority
-      }". Must be one of: ${Object.values(TaskPriority).join(", ")}`
     );
   }
 

@@ -34,9 +34,7 @@ const generateClientId = async (branchId: string): Promise<string> => {
 const createClient = async (
   name: string,
   email: string,
-  serviceId: string,
   branchId: string,
-  assignedEmployeeId: string,
   status: ClientStatus,
   phone?: string,
   address?: string,
@@ -71,15 +69,6 @@ const createClient = async (
     }
   }
 
-  // Check if service exists
-  const service = await prisma.service.findUnique({
-    where: { id: serviceId },
-  });
-
-  if (!service) {
-    throw new ApiError(httpStatus.BAD_REQUEST, "Service not found");
-  }
-
   // Check if branch exists
   const branch = await prisma.branch.findUnique({
     where: { id: branchId },
@@ -101,14 +90,11 @@ const createClient = async (
       city,
       postalCode,
       province: province?.toUpperCase(),
-      serviceId,
       branchId,
       clientId,
-      assignedEmployeeId,
       status,
     },
     include: {
-      service: true,
       branch: true,
     },
   });
@@ -143,12 +129,11 @@ const queryClients = async (
     take: limit,
     orderBy: sortBy ? { [sortBy]: sortType } : undefined,
     include: {
-      service: true,
       branch: true,
-      assignedEmployee: true,
       _count: {
         select: {
           invoices: true,
+          tasks: true,
         },
       },
     },
@@ -166,7 +151,7 @@ const getClientById = async (id: string): Promise<Client | null> => {
   return prisma.client.findUnique({
     where: { id },
     include: {
-      service: true,
+      branch: true,
       invoices: {
         include: {
           items: {
@@ -215,29 +200,11 @@ const updateClientById = async (
     }
   }
 
-  // Check if new service exists
-  if (
-    updateBody.service &&
-    typeof updateBody.service === "object" &&
-    "connect" in updateBody.service
-  ) {
-    const serviceId = (updateBody.service as any).connect?.id;
-    if (serviceId) {
-      const service = await prisma.service.findUnique({
-        where: { id: serviceId },
-      });
-
-      if (!service) {
-        throw new ApiError(httpStatus.BAD_REQUEST, "Service not found");
-      }
-    }
-  }
-
   const updatedClient = await prisma.client.update({
     where: { id: clientId },
     data: updateBody,
     include: {
-      service: true,
+      branch: true,
     },
   });
 

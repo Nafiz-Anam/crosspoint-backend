@@ -1,5 +1,5 @@
 import Joi from "joi";
-import { TaskStatus, TaskPriority } from "@prisma/client";
+import { TaskStatus } from "@prisma/client";
 
 const createTask = {
   body: Joi.object().keys({
@@ -9,9 +9,6 @@ const createTask = {
     assignedEmployeeId: Joi.string().required().uuid(),
     status: Joi.string()
       .valid(...Object.values(TaskStatus))
-      .optional(),
-    priority: Joi.string()
-      .valid(...Object.values(TaskPriority))
       .optional(),
     dueDate: Joi.date().optional().min("now"),
     startDate: Joi.date().optional(),
@@ -24,9 +21,6 @@ const getTasks = {
     title: Joi.string().optional(),
     status: Joi.string()
       .valid(...Object.values(TaskStatus))
-      .optional(),
-    priority: Joi.string()
-      .valid(...Object.values(TaskPriority))
       .optional(),
     clientId: Joi.string().optional().uuid(),
     serviceId: Joi.string().optional().uuid(),
@@ -56,9 +50,6 @@ const updateTask = {
       assignedEmployeeId: Joi.string().optional().uuid(),
       status: Joi.string()
         .valid(...Object.values(TaskStatus))
-        .optional(),
-      priority: Joi.string()
-        .valid(...Object.values(TaskPriority))
         .optional(),
       dueDate: Joi.date().optional().allow(null),
       startDate: Joi.date().optional().allow(null),

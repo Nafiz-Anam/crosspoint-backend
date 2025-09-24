@@ -421,7 +421,7 @@ const getProjectsOverview = catchAsync(async (req: Request, res: Response) => {
       include: {
         _count: {
           select: {
-            clients: true,
+            tasks: true,
             invoiceItems: true,
           },
         },
@@ -435,13 +435,6 @@ const getProjectsOverview = catchAsync(async (req: Request, res: Response) => {
     prisma.client.findMany({
       where: whereClause,
       include: {
-        service: true,
-        assignedEmployee: {
-          select: {
-            name: true,
-            email: true,
-          },
-        },
         branch: {
           select: {
             name: true,

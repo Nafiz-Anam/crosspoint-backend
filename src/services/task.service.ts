@@ -1,4 +1,4 @@
-import { Task, TaskStatus, TaskPriority, Prisma } from "@prisma/client";
+import { Task, TaskStatus, Prisma } from "@prisma/client";
 import httpStatus from "http-status";
 import prisma from "../client";
 import ApiError from "../utils/ApiError";
@@ -38,7 +38,6 @@ const generateTaskId = async (branchId: string): Promise<string> => {
  * @param {string} assignedEmployeeId
  * @param {string} [description]
  * @param {TaskStatus} [status]
- * @param {TaskPriority} [priority]
  * @param {Date} [dueDate]
  * @param {Date} [startDate]
  * @param {string} [notes]
@@ -50,7 +49,6 @@ const createTask = async (
   assignedEmployeeId: string,
   description?: string,
   status: TaskStatus = TaskStatus.PENDING,
-  priority: TaskPriority = TaskPriority.MEDIUM,
   dueDate?: Date,
   startDate?: Date,
   notes?: string
@@ -99,7 +97,6 @@ const createTask = async (
       serviceId,
       assignedEmployeeId,
       status,
-      priority,
       dueDate,
       startDate,
       notes,

@@ -11,11 +11,9 @@ const createClient = catchAsync(async (req, res) => {
     name,
     nationalIdentificationNumber,
     email,
-    serviceId,
     branchId,
     phone,
     address,
-    assignedEmployeeId,
     city,
     postalCode,
     province,
@@ -35,9 +33,7 @@ const createClient = catchAsync(async (req, res) => {
   const client = await clientService.createClient(
     name,
     email,
-    serviceId,
     branchId,
-    assignedEmployeeId,
     status || ClientStatus.PENDING,
     phone,
     address,
@@ -61,7 +57,6 @@ const getClients = catchAsync(async (req, res) => {
     "name",
     "nationalIdentificationNumber",
     "email",
-    "serviceId",
   ]);
   const options = pick(req.query, ["sortBy", "limit", "page"]);
 

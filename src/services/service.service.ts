@@ -71,8 +71,8 @@ const queryServices = async (
     include: {
       _count: {
         select: {
-          clients: true,
           invoiceItems: true,
+          tasks: true,
         },
       },
     },
@@ -90,8 +90,8 @@ const getServiceById = async (id: string): Promise<Service | null> => {
   return prisma.service.findUnique({
     where: { id },
     include: {
-      clients: true,
       invoiceItems: true,
+      tasks: true,
     },
   });
 };
@@ -147,15 +147,15 @@ const deleteServiceById = async (serviceId: string): Promise<Service> => {
     throw new ApiError(httpStatus.NOT_FOUND, "Service not found");
   }
 
-  // Check if service has associated clients
-  const clientCount = await prisma.client.count({
+  // Check if service has associated tasks
+  const taskCount = await prisma.task.count({
     where: { serviceId },
   });
 
-  if (clientCount > 0) {
+  if (taskCount > 0) {
     throw new ApiError(
       httpStatus.BAD_REQUEST,
-      `Cannot delete service. It has ${clientCount} associated client(s).`
+      `Cannot delete service. It has ${taskCount} associated task(s).`
     );
   }
 

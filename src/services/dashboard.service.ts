@@ -496,7 +496,7 @@ const getProjectsOverview = async (filters: { branchId?: string }) => {
         include: {
           _count: {
             select: {
-              clients: true,
+              tasks: true,
               invoiceItems: true,
             },
           },
@@ -510,13 +510,6 @@ const getProjectsOverview = async (filters: { branchId?: string }) => {
       prisma.client.findMany({
         where: whereClause,
         include: {
-          service: true,
-          assignedEmployee: {
-            select: {
-              name: true,
-              email: true,
-            },
-          },
           branch: {
             select: {
               name: true,
