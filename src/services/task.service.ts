@@ -1,4 +1,4 @@
-import { Task, TaskStatus, Prisma } from "@prisma/client";
+import { Task, TaskStatus, Prisma, Role } from "@prisma/client";
 import httpStatus from "http-status";
 import prisma from "../client";
 import ApiError from "../utils/ApiError";
@@ -378,6 +378,65 @@ const deleteTaskById = async (
  * @param {string} currentUserRole - Current user's role
  * @returns {Promise<Task[]>}
  */
+/**
+ * Get task statistics based on user role and ID
+ * @param {string} userId - Current user's ID
+ * @param {Role} userRole - Current user's role
+ * @returns {Promise<Object>} Task statistics
+ */
+const getTaskStatistics = async (
+  userId: string,
+  userRole: Role
+): Promise<{ pending: number; completed: number; cancelled: number }> => {
+  let filter = {};
+
+  // For employees, only show tasks assigned to them
+  if (userRole === Role.EMPLOYEE) {
+    filter = { assignedEmployeeId: userId };
+  } else if (userRole === Role.MANAGER) {
+    // For managers, show tasks from their branch
+    const employee = await prisma.employee.findUnique({
+      where: { id: userId },
+      select: { branchId: true },
+    });
+    if (employee?.branchId) {
+      filter = {
+        client: {
+          branchId: employee.branchId,
+        },
+      };
+    }
+  }
+  // For admin and HR, show all tasks (no additional filter)
+
+  const taskStats = await prisma.task.groupBy({
+    by: ["status"],
+    _count: {
+      _all: true,
+    },
+    where: filter,
+  });
+
+  // Convert the results into the expected format
+  const stats = {
+    pending: 0,
+    completed: 0,
+    cancelled: 0,
+  };
+
+  taskStats.forEach((stat) => {
+    if (stat.status === TaskStatus.PENDING) {
+      stats.pending = stat._count._all;
+    } else if (stat.status === TaskStatus.COMPLETED) {
+      stats.completed = stat._count._all;
+    } else if (stat.status === TaskStatus.CANCELLED) {
+      stats.cancelled = stat._count._all;
+    }
+  });
+
+  return stats;
+};
+
 const getTasksByClientId = async (
   clientId: string,
   currentUserId: string,
@@ -420,4 +479,5 @@ export {
   updateTaskById,
   deleteTaskById,
   getTasksByClientId,
+  getTaskStatistics,
 };

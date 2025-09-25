@@ -16,6 +16,13 @@ router.use(auth());
 router.use(loadUserPermissions);
 
 router
+  .route("/statistics")
+  .get(
+    requirePermission(Permission.READ_TASK),
+    taskController.getTaskStatistics
+  );
+
+router
   .route("/")
   .post(
     requirePermission(Permission.CREATE_TASK),

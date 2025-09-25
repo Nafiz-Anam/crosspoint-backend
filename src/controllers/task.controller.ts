@@ -4,7 +4,26 @@ import ApiError from "../utils/ApiError";
 import catchAsync from "../utils/catchAsync";
 import { taskService } from "../services";
 import sendResponse from "../utils/responseHandler";
-import { TaskStatus } from "@prisma/client";
+import { TaskStatus, Role } from "@prisma/client";
+
+const getTaskStatistics = catchAsync(async (req, res) => {
+  const userId = req.employee?.id;
+  const userRole = req.employee?.role;
+
+  if (!userId || !userRole) {
+    throw new ApiError(httpStatus.UNAUTHORIZED, "User not authenticated");
+  }
+
+  const stats = await taskService.getTaskStatistics(userId, userRole);
+
+  sendResponse(
+    res,
+    httpStatus.OK,
+    true,
+    stats,
+    "Task statistics retrieved successfully"
+  );
+});
 
 const createTask = catchAsync(async (req, res) => {
   const {
@@ -186,4 +205,5 @@ export {
   updateTask,
   deleteTask,
   getTasksByClient,
+  getTaskStatistics,
 };
