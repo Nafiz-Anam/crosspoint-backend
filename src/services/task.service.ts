@@ -36,22 +36,24 @@ const generateTaskId = async (branchId: string): Promise<string> => {
  * @param {string} clientId
  * @param {string} serviceId
  * @param {string} assignedEmployeeId
- * @param {string} [description]
- * @param {TaskStatus} [status]
- * @param {Date} [dueDate]
- * @param {Date} [startDate]
- * @param {string} [notes]
+ * @param {string} description
+ * @param {TaskStatus} status
+ * @param {Date} dueDate
+ * @param {Date} startDate
+ * @param {number} estimatedHours
+ * @param {string} notes
  * @returns {Promise<Task>}
  */
 const createTask = async (
   clientId: string,
   serviceId: string,
   assignedEmployeeId: string,
-  description?: string,
-  status: TaskStatus = TaskStatus.PENDING,
-  dueDate?: Date,
-  startDate?: Date,
-  notes?: string
+  description: string,
+  status: TaskStatus,
+  dueDate: Date,
+  startDate: Date,
+  estimatedHours: number,
+  notes: string
 ): Promise<Task> => {
   // Verify client exists and get branch info
   const client = await prisma.client.findUnique({
@@ -99,6 +101,7 @@ const createTask = async (
       status,
       dueDate,
       startDate,
+      estimatedHours,
       notes,
     },
     include: {

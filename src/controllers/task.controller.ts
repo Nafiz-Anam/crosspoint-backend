@@ -35,11 +35,44 @@ const createTask = catchAsync(async (req, res) => {
     status,
     dueDate,
     startDate,
+    estimatedHours,
     notes,
   } = req.body;
 
+  // Validate required fields
+  if (!description) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Description is required");
+  }
+  if (!clientId) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Client ID is required");
+  }
+  if (!serviceId) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Service ID is required");
+  }
+  if (!assignedEmployeeId) {
+    throw new ApiError(
+      httpStatus.BAD_REQUEST,
+      "Assigned employee ID is required"
+    );
+  }
+  if (!status) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Status is required");
+  }
+  if (!dueDate) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Due date is required");
+  }
+  if (!startDate) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Start date is required");
+  }
+  if (!estimatedHours) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Estimated hours is required");
+  }
+  if (!notes) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Notes are required");
+  }
+
   // Validate status is a valid TaskStatus enum value
-  if (status && !Object.values(TaskStatus).includes(status)) {
+  if (!Object.values(TaskStatus).includes(status)) {
     throw new ApiError(
       httpStatus.BAD_REQUEST,
       `Invalid status: "${status}". Must be one of: ${Object.values(
@@ -48,14 +81,33 @@ const createTask = catchAsync(async (req, res) => {
     );
   }
 
+  // Validate estimated hours is a positive number
+  if (estimatedHours <= 0) {
+    throw new ApiError(
+      httpStatus.BAD_REQUEST,
+      "Estimated hours must be greater than 0"
+    );
+  }
+
+  // Validate date order
+  const startDateObj = new Date(startDate);
+  const dueDateObj = new Date(dueDate);
+  if (startDateObj >= dueDateObj) {
+    throw new ApiError(
+      httpStatus.BAD_REQUEST,
+      "Start date must be before due date"
+    );
+  }
+
   const task = await taskService.createTask(
     clientId,
     serviceId,
     assignedEmployeeId,
     description,
-    status || TaskStatus.PENDING,
-    dueDate ? new Date(dueDate) : undefined,
-    startDate ? new Date(startDate) : undefined,
+    status,
+    new Date(dueDate),
+    new Date(startDate),
+    estimatedHours,
     notes
   );
 
