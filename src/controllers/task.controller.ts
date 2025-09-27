@@ -5,6 +5,7 @@ import catchAsync from "../utils/catchAsync";
 import { taskService } from "../services";
 import sendResponse from "../utils/responseHandler";
 import { TaskStatus, Role } from "@prisma/client";
+import cronService from "../services/cron.service";
 
 const getTaskStatistics = catchAsync(async (req, res) => {
   const userId = req.employee?.id;
@@ -198,6 +199,17 @@ const getTasksByClient = catchAsync(async (req, res) => {
   );
 });
 
+const checkTaskDeadlines = catchAsync(async (req, res) => {
+  await cronService.checkTaskDeadlines();
+  sendResponse(
+    res,
+    httpStatus.OK,
+    true,
+    null,
+    "Task deadline check completed successfully"
+  );
+});
+
 export {
   createTask,
   getTasks,
@@ -206,4 +218,5 @@ export {
   deleteTask,
   getTasksByClient,
   getTaskStatistics,
+  checkTaskDeadlines,
 };

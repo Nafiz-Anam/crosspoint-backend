@@ -2,7 +2,7 @@ import httpStatus from "http-status";
 import ApiError from "../utils/ApiError";
 import catchAsync from "../utils/catchAsync";
 import { employeeService } from "../services";
-import { isPasswordMatch } from "../utils/encryption";
+import { isPasswordMatch, encryptPassword } from "../utils/encryption";
 
 const getMyProfile = catchAsync(async (req, res) => {
   const employeeId = req.employee?.id;
@@ -102,7 +102,7 @@ const changePassword = catchAsync(async (req, res) => {
 
   // Update password
   await employeeService.updateEmployeeById(employeeId, {
-    password: newPassword,
+    password: await encryptPassword(newPassword),
   });
 
   res.status(httpStatus.OK).json({

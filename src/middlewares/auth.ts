@@ -21,15 +21,18 @@ const verifyCallback =
   };
 
 const auth = () => async (req: Request, res: Response, next: NextFunction) => {
-  return new Promise((resolve, reject) => {
-    passport.authenticate(
-      "jwt",
-      { session: false },
-      verifyCallback(req, resolve, reject)
-    )(req, res, next);
-  })
-    .then(() => next())
-    .catch((err) => next(err));
+  try {
+    await new Promise((resolve, reject) => {
+      passport.authenticate(
+        "jwt",
+        { session: false },
+        verifyCallback(req, resolve, reject)
+      )(req, res, next);
+    });
+    next();
+  } catch (err) {
+    next(err);
+  }
 };
 
 export default auth;

@@ -8,6 +8,7 @@ import { Permission } from "@prisma/client";
 import { employeeController } from "../../../controllers";
 import { validate } from "../../../middlewares/validate";
 import { employeeValidation } from "../../../validations";
+import { upload } from "../../../middlewares/upload";
 
 const router = express.Router();
 
@@ -40,6 +41,28 @@ router
   .delete(
     requirePermission(Permission.DELETE_EMPLOYEE),
     employeeController.deleteEmployee
+  );
+
+router
+  .route("/:employeeId/profile-image")
+  .patch(
+    requirePermission(Permission.UPDATE_EMPLOYEE),
+    employeeController.updateProfileImage
+  );
+
+router
+  .route("/upload-profile-image")
+  .post(
+    requirePermission(Permission.UPDATE_EMPLOYEE),
+    upload.single("profileImage"),
+    employeeController.uploadProfileImage
+  );
+
+router
+  .route("/check-birthdays")
+  .post(
+    requirePermission(Permission.READ_EMPLOYEE),
+    employeeController.checkEmployeeBirthdays
   );
 
 export default router;

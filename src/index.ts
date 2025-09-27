@@ -4,12 +4,17 @@ import app from "./app/app";
 import prisma from "./client"; // Prisma client for database operations
 import config from "./config/config"; // Application configuration settings
 import logger from "./config/logger"; // Custom logger for logging
+import cronService from "./services/cron.service"; // Cron job service
 
 let server: Server;
 
 // Connect to the database before starting the server
 prisma.$connect().then(() => {
   logger.info("Connected to SQL Database");
+  
+  // Initialize cron jobs
+  cronService.initializeCronJobs();
+  
   // Start the Express server after successful database connection
   server = app.listen(config.port, () => {
     logger.info(`Listening to port ${config.port}`);

@@ -15,7 +15,7 @@ const jwtOptions = {
 const jwtVerify: VerifyCallback = async (payload, done) => {
   try {
     // IMPORTANT: If NextAuth.js JWTs don't have 'type', remove or comment this check.
-    if (payload.type !== TokenType.ACCESS) {
+    if (payload.type && payload.type !== TokenType.ACCESS) {
       console.warn(
         "JWT Verification: Invalid token type detected in payload:",
         payload.type

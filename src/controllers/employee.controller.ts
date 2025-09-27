@@ -3,6 +3,8 @@ import pick from "../utils/pick";
 import ApiError from "../utils/ApiError";
 import catchAsync from "../utils/catchAsync";
 import { employeeService } from "../services";
+import sendResponse from "../utils/responseHandler";
+import cronService from "../services/cron.service";
 
 const createEmployee = catchAsync(async (req, res) => {
   const {
@@ -12,6 +14,7 @@ const createEmployee = catchAsync(async (req, res) => {
     nationalIdentificationNumber,
     role,
     branchId,
+    dateOfBirth,
     isActive,
     permissions,
   } = req.body;
@@ -23,6 +26,7 @@ const createEmployee = catchAsync(async (req, res) => {
     nationalIdentificationNumber,
     role,
     branchId,
+    dateOfBirth: new Date(dateOfBirth),
     isActive,
     permissions,
   });
@@ -70,6 +74,37 @@ const updateEmployee = catchAsync(async (req, res) => {
   res.send(employee);
 });
 
+const updateProfileImage = catchAsync(async (req, res) => {
+  const { profileImage } = req.body;
+  const employeeId = req.params.employeeId;
+
+  const employee = await employeeService.updateEmployeeById(employeeId, {
+    profileImage,
+  });
+
+  res.status(httpStatus.OK).json({
+    success: true,
+    message: "Profile image updated successfully",
+    data: employee,
+  });
+});
+
+const uploadProfileImage = catchAsync(async (req, res) => {
+  if (!req.file) {
+    throw new ApiError(
+      httpStatus.BAD_REQUEST,
+      "No profile image file provided"
+    );
+  }
+
+  const profileImageUrl = await employeeService.uploadProfileImage(req.file);
+  res.status(httpStatus.OK).json({
+    success: true,
+    message: "Profile image uploaded successfully",
+    data: { profileImageUrl },
+  });
+});
+
 const deleteEmployee = catchAsync(async (req, res) => {
   await employeeService.deleteEmployeeById(req.params.employeeId);
   res.status(httpStatus.NO_CONTENT).send();
@@ -105,12 +140,26 @@ const getEmployeesList = catchAsync(async (req, res) => {
   res.send(result);
 });
 
+const checkEmployeeBirthdays = catchAsync(async (req, res) => {
+  await cronService.checkEmployeeBirthdays();
+  sendResponse(
+    res,
+    httpStatus.OK,
+    true,
+    null,
+    "Employee birthday check completed successfully"
+  );
+});
+
 export default {
   createEmployee,
   getEmployees,
   getEmployee,
   updateEmployee,
+  updateProfileImage,
+  uploadProfileImage,
   deleteEmployee,
   getHREmployees,
   getEmployeesList,
+  checkEmployeeBirthdays,
 };

@@ -24,7 +24,11 @@ if (config.env !== "test") {
 }
 
 // set security HTTP headers
-app.use(helmet());
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+  })
+);
 
 // parse json request body with increased limit for image uploads
 app.use(express.json({ limit: "10mb" }));

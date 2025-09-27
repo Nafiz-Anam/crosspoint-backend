@@ -46,6 +46,8 @@ model Employee {
   role                         Role         @default(EMPLOYEE)
   branchId                     String?
   branch                       Branch?      @relation(fields: [branchId], references: [id])
+  dateOfBirth                  DateTime // Required field for birthday notifications
+  profileImage                 String? // Profile image URL
   isEmailVerified              Boolean      @default(false)
   isActive                     Boolean      @default(true)
   createdAt                    DateTime     @default(now())

@@ -1,7 +1,5 @@
 import Joi from "joi";
-
-const passwordRegex =
-  /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\^$*.\\[\]{}()?\-"!@#%&/,><':;|_~`])\S{10,}$/;
+import { passwordRegex } from "./custom.validation";
 
 const authValidation = {
   register: Joi.object({
@@ -40,6 +38,15 @@ const authValidation = {
       "string.email": "Invalid email format",
       "any.required": "Email is required",
       "string.empty": "Email cannot be empty",
+    }),
+  }),
+
+  resetPassword: Joi.object({
+    password: Joi.string().pattern(passwordRegex).required().messages({
+      "string.pattern.base":
+        "Password must be at least 10 characters long, with at least one uppercase letter, one lowercase letter, one digit, and one special character, without spaces",
+      "any.required": "Password is required",
+      "string.empty": "Password cannot be empty",
     }),
   }),
 };

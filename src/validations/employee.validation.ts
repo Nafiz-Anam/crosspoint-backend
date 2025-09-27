@@ -20,6 +20,7 @@ const createEmployee = {
       then: Joi.required(),
       otherwise: Joi.optional(),
     }),
+    dateOfBirth: Joi.date().required(),
     isActive: Joi.boolean().default(true),
     permissions: Joi.array().items(Joi.string()).min(1).required(),
   }),

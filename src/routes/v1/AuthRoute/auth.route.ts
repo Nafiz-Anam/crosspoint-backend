@@ -19,7 +19,11 @@ router.post(
   validate(authValidation.forgotPassword),
   authController.forgotPassword
 );
-router.post("/reset-password", authController.resetPassword);
+router.post(
+  "/reset-password",
+  validate(authValidation.resetPassword),
+  authController.resetPassword
+);
 router.post(
   "/send-verification-email",
   auth(),

@@ -19,7 +19,7 @@ const createService = catchAsync(async (req, res) => {
 });
 
 const getServices = catchAsync(async (req, res) => {
-  const filter = pick(req.query, ["name"]);
+  const filter = pick(req.query, ["name", "category"]);
   const options = pick(req.query, ["sortBy", "limit", "page"]);
 
   // Convert string values to appropriate types for options

@@ -105,6 +105,18 @@ export default router;
  *       - Services
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: category
+ *         schema:
+ *           type: string
+ *           enum: [Consulting, Development, Design]
+ *         description: Filter services by category
+ *       - in: query
+ *         name: name
+ *         schema:
+ *           type: string
+ *         description: Filter services by name
  *     responses:
  *       200:
  *         description: List of services

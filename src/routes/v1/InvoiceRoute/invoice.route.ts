@@ -77,6 +77,13 @@ router
     invoiceController.createInvoiceFromTask
   );
 
+router
+  .route("/check-overdue")
+  .post(
+    requirePermission(Permission.READ_INVOICE),
+    invoiceController.checkOverdueInvoices
+  );
+
 export default router;
 
 /**

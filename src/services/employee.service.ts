@@ -5,6 +5,10 @@ import ApiError from "../utils/ApiError";
 import { encryptPassword } from "../utils/encryption";
 import { branchService } from "../services";
 import { allRoles } from "../config/roles";
+import path from "path";
+import fs from "fs";
+import { promisify } from "util";
+import config from "../config/config";
 
 const registerEmployee = async (email: string, password: string) => {
   // Check if email already exists
@@ -17,6 +21,7 @@ const registerEmployee = async (email: string, password: string) => {
     data: {
       email,
       password: await encryptPassword(password),
+      dateOfBirth: new Date("1990-01-01"), // Default date of birth for basic employees
     },
   });
 
@@ -35,6 +40,7 @@ const createEmployee = async ({
   nationalIdentificationNumber,
   role = Role.EMPLOYEE,
   branchId,
+  dateOfBirth,
   isActive = true,
   permissions = [],
 }: {
@@ -44,6 +50,7 @@ const createEmployee = async ({
   nationalIdentificationNumber?: string;
   role?: Role;
   branchId?: string;
+  dateOfBirth: Date;
   isActive?: boolean;
   permissions?: Permission[];
 }): Promise<
@@ -118,6 +125,7 @@ const createEmployee = async ({
         password: await encryptPassword(password),
         role,
         branchId,
+        dateOfBirth,
         isActive,
         employeeId,
         permissions: finalPermissions, // Use role-based or provided permissions
@@ -166,9 +174,13 @@ const queryEmployees = async <Key extends keyof Employee>(
     "employeeId",
     "name",
     "email",
+    "nationalIdentificationNumber",
+    "dateOfBirth",
+    "profileImage",
     "branchId",
     "role",
     "isActive",
+    "isEmailVerified",
     "permissions",
     "createdAt",
     "updatedAt",
@@ -198,18 +210,33 @@ const getEmployeeById = async <Key extends keyof Employee>(
   id: string,
   keys: Key[] = [
     "id",
+    "employeeId",
     "email",
     "name",
     "password",
+    "nationalIdentificationNumber",
+    "dateOfBirth",
+    "profileImage",
+    "branchId",
     "role",
     "isEmailVerified",
+    "isActive",
     "createdAt",
     "updatedAt",
   ] as Key[]
 ): Promise<Pick<Employee, Key> | null> => {
   return prisma.employee.findUnique({
     where: { id },
-    select: keys.reduce((obj, k) => ({ ...obj, [k]: true }), {}),
+    select: {
+      ...keys.reduce((obj, k) => ({ ...obj, [k]: true }), {}),
+      branch: {
+        select: {
+          id: true,
+          name: true,
+          branchId: true,
+        },
+      },
+    },
   }) as Promise<Pick<Employee, Key> | null>;
 };
 
@@ -281,6 +308,46 @@ const deleteEmployeeById = async (employeeId: string): Promise<Employee> => {
   return employee;
 };
 
+/**
+ * Upload profile image
+ * @param {any} file - Uploaded file
+ * @returns {Promise<string>} - Public URL of uploaded image
+ */
+const uploadProfileImage = async (file: any): Promise<string> => {
+  try {
+    // Create uploads directory if it doesn't exist
+    const uploadsDir = path.join(
+      process.cwd(),
+      "public",
+      "uploads",
+      "profiles"
+    );
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true });
+    }
+
+    // Generate unique filename
+    const fileExtension = path.extname(file.originalname);
+    const fileName = `profile-${Date.now()}${fileExtension}`;
+    const filePath = path.join(uploadsDir, fileName);
+
+    // Save file
+    const writeFile = promisify(fs.writeFile);
+    await writeFile(filePath, file.buffer);
+
+    // Return the full public URL
+    const profileImageUrl = `${config.baseUrl}/uploads/profiles/${fileName}`;
+
+    return profileImageUrl;
+  } catch (error) {
+    console.error("Error uploading profile image:", error);
+    throw new ApiError(
+      httpStatus.INTERNAL_SERVER_ERROR,
+      "Failed to upload profile image"
+    );
+  }
+};
+
 export default {
   createEmployee,
   queryEmployees,
@@ -289,4 +356,5 @@ export default {
   updateEmployeeById,
   deleteEmployeeById,
   registerEmployee,
+  uploadProfileImage,
 };

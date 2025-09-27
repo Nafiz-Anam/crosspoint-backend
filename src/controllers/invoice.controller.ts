@@ -5,6 +5,7 @@ import catchAsync from "../utils/catchAsync";
 import { invoiceService } from "../services";
 import { InvoiceStatus } from "@prisma/client";
 import sendResponse from "../utils/responseHandler";
+import cronService from "../services/cron.service";
 
 const createInvoice = catchAsync(async (req, res) => {
   const {
@@ -375,6 +376,17 @@ const getInvoiceStats = catchAsync(async (req, res) => {
   );
 });
 
+const checkOverdueInvoices = catchAsync(async (req, res) => {
+  await cronService.checkOverdueInvoices();
+  sendResponse(
+    res,
+    httpStatus.OK,
+    true,
+    null,
+    "Overdue invoice check completed successfully"
+  );
+});
+
 const createInvoiceFromTask = catchAsync(async (req, res) => {
   const { taskId } = req.params;
   const {
@@ -422,4 +434,5 @@ export default {
   updateInvoiceStatus,
   generateInvoiceNumber,
   getInvoiceStats,
+  checkOverdueInvoices,
 };

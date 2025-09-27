@@ -36,6 +36,7 @@ const createBranch = catchAsync(async (req, res) => {
   });
   res.status(httpStatus.CREATED).json({
     success: true,
+    status: httpStatus.CREATED,
     message: "Branch created successfully",
     data: branch,
   });
@@ -45,6 +46,7 @@ const getAllBranches = catchAsync(async (req, res) => {
   const branches = await branchService.getAllBranches();
   res.status(httpStatus.OK).json({
     success: true,
+    status: httpStatus.OK,
     message: "Branches retrieved successfully",
     data: branches,
   });
@@ -55,6 +57,7 @@ const getBranchById = catchAsync(async (req, res) => {
   const branch = await branchService.getBranchById(id);
   res.status(httpStatus.OK).json({
     success: true,
+    status: httpStatus.OK,
     message: "Branch retrieved successfully",
     data: branch,
   });
@@ -65,6 +68,7 @@ const getBranchByBranchId = catchAsync(async (req, res) => {
   const branch = await branchService.getBranchByBranchId(branchId);
   res.status(httpStatus.OK).json({
     success: true,
+    status: httpStatus.OK,
     message: "Branch retrieved successfully",
     data: branch,
   });
@@ -95,6 +99,7 @@ const updateBranch = catchAsync(async (req, res) => {
   const branch = await branchService.updateBranch(id, updateData);
   res.status(httpStatus.OK).json({
     success: true,
+    status: httpStatus.OK,
     message: "Branch updated successfully",
     data: branch,
   });
@@ -105,6 +110,7 @@ const deleteBranch = catchAsync(async (req, res) => {
   await branchService.deleteBranch(id);
   res.status(httpStatus.OK).json({
     success: true,
+    status: httpStatus.OK,
     message: "Branch deleted successfully",
   });
 });

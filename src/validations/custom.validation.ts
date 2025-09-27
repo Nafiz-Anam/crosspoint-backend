@@ -1,12 +1,16 @@
 import Joi from "joi";
 
+// Standardized password regex pattern used across all validations
+export const passwordRegex =
+  /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\^$*.\\[\]{}()?\-"!@#%&/,><':;|_~`])\S{10,}$/;
+
 export const password: Joi.CustomValidator<string> = (value, helpers) => {
-  if (value.length < 8) {
-    return helpers.error("password must be at least 8 characters");
+  if (value.length < 10) {
+    return helpers.error("password must be at least 10 characters");
   }
-  if (!value.match(/\d/) || !value.match(/[a-zA-Z]/)) {
+  if (!value.match(passwordRegex)) {
     return helpers.error(
-      "password must contain at least 1 letter and 1 number"
+      "password must be at least 10 characters long, with at least one uppercase letter, one lowercase letter, one digit, and one special character, without spaces"
     );
   }
   return value;

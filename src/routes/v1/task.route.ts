@@ -62,4 +62,11 @@ router
     taskController.getTasksByClient
   );
 
+router
+  .route("/check-deadlines")
+  .post(
+    requirePermission(Permission.READ_TASK),
+    taskController.checkTaskDeadlines
+  );
+
 export default router;
