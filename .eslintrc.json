@@ -14,7 +14,7 @@
   "ignorePatterns": [
     "scripts/assign-admin-permissions.js",
     "check-all-employees.js",
-    "check-password.js", 
+    "check-password.js",
     "reset-password.js",
     "verify-password.js"
   ],
