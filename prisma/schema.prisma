@@ -93,21 +93,21 @@ model Service {
 }
 
 model Client {
-  id                           String       @id @default(uuid())
-  clientId                     String?      @unique // Format: CLT-BR001-001, CLT-BR002-001, etc.
-  nationalIdentificationNumber String?      @unique // National ID number (unique)
+  id                           String    @id @default(uuid())
+  clientId                     String?   @unique // Format: CLT-BR001-001, CLT-BR002-001, etc.
+  nationalIdentificationNumber String?   @unique // National ID number (unique)
   name                         String
-  email                        String       @unique
+  email                        String    @unique
   phone                        String?
   address                      String?
   city                         String? // Italian city
   postalCode                   String? // Italian postal code (CAP)
   province                     String? // Italian province (2-letter code)
   branchId                     String
-  branch                       Branch       @relation(fields: [branchId], references: [id])
-  status                       ClientStatus @default(PENDING)
-  createdAt                    DateTime     @default(now())
-  updatedAt                    DateTime     @updatedAt
+  branch                       Branch    @relation(fields: [branchId], references: [id])
+  // Removed status field - not used for clients
+  createdAt                    DateTime  @default(now())
+  updatedAt                    DateTime  @updatedAt
   invoices                     Invoice[]
   tasks                        Task[]
 

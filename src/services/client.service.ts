@@ -1,4 +1,4 @@
-import { Client, ClientStatus, Prisma } from "@prisma/client";
+import { Client, Prisma } from "@prisma/client";
 import httpStatus from "http-status";
 import prisma from "../client";
 import ApiError from "../utils/ApiError";
@@ -35,7 +35,6 @@ const createClient = async (
   name: string,
   email: string,
   branchId: string,
-  status: ClientStatus,
   phone?: string,
   address?: string,
   city?: string,
@@ -92,7 +91,6 @@ const createClient = async (
       province: province?.toUpperCase(),
       branchId,
       clientId,
-      status,
     },
     include: {
       branch: true,

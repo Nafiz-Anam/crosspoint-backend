@@ -4,7 +4,7 @@ import ApiError from "../utils/ApiError";
 import catchAsync from "../utils/catchAsync";
 import { clientService } from "../services";
 import sendResponse from "../utils/responseHandler";
-import { ClientStatus } from "@prisma/client";
+// Removed ClientStatus import - not used for clients
 
 const createClient = catchAsync(async (req, res) => {
   const {
@@ -17,24 +17,12 @@ const createClient = catchAsync(async (req, res) => {
     city,
     postalCode,
     province,
-    status,
   } = req.body;
-
-  // Validate status is a valid ClientStatus enum value
-  if (status && !Object.values(ClientStatus).includes(status)) {
-    throw new ApiError(
-      httpStatus.BAD_REQUEST,
-      `Invalid status: "${status}". Must be one of: ${Object.values(
-        ClientStatus
-      ).join(", ")}`
-    );
-  }
 
   const client = await clientService.createClient(
     name,
     email,
     branchId,
-    status || ClientStatus.PENDING,
     phone,
     address,
     city,
