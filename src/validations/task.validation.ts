@@ -3,16 +3,15 @@ import { TaskStatus } from "@prisma/client";
 
 const createTask = {
   body: Joi.object().keys({
-    description: Joi.string().optional().max(1000),
+    description: Joi.string().required().max(1000),
     clientId: Joi.string().required().uuid(),
     serviceId: Joi.string().required().uuid(),
     assignedEmployeeId: Joi.string().required().uuid(),
     status: Joi.string()
       .valid(...Object.values(TaskStatus))
-      .optional(),
-    dueDate: Joi.date().optional().min("now"),
-    startDate: Joi.date().optional(),
-    notes: Joi.string().optional().max(1000),
+      .required(),
+    dueDate: Joi.date().required().min("now"),
+    startDate: Joi.date().required(),
   }),
 };
 

@@ -40,8 +40,6 @@ const generateTaskId = async (branchId: string): Promise<string> => {
  * @param {TaskStatus} status
  * @param {Date} dueDate
  * @param {Date} startDate
- * @param {number} estimatedHours
- * @param {string} notes
  * @returns {Promise<Task>}
  */
 const createTask = async (
@@ -51,9 +49,7 @@ const createTask = async (
   description: string,
   status: TaskStatus,
   dueDate: Date,
-  startDate: Date,
-  estimatedHours: number,
-  notes: string
+  startDate: Date
 ): Promise<Task> => {
   // Verify client exists and get branch info
   const client = await prisma.client.findUnique({
@@ -101,8 +97,6 @@ const createTask = async (
       status,
       dueDate,
       startDate,
-      estimatedHours,
-      notes,
     },
     include: {
       client: {

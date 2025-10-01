@@ -35,8 +35,6 @@ const createTask = catchAsync(async (req, res) => {
     status,
     dueDate,
     startDate,
-    estimatedHours,
-    notes,
   } = req.body;
 
   // Validate required fields
@@ -64,12 +62,6 @@ const createTask = catchAsync(async (req, res) => {
   if (!startDate) {
     throw new ApiError(httpStatus.BAD_REQUEST, "Start date is required");
   }
-  if (!estimatedHours) {
-    throw new ApiError(httpStatus.BAD_REQUEST, "Estimated hours is required");
-  }
-  if (!notes) {
-    throw new ApiError(httpStatus.BAD_REQUEST, "Notes are required");
-  }
 
   // Validate status is a valid TaskStatus enum value
   if (!Object.values(TaskStatus).includes(status)) {
@@ -78,14 +70,6 @@ const createTask = catchAsync(async (req, res) => {
       `Invalid status: "${status}". Must be one of: ${Object.values(
         TaskStatus
       ).join(", ")}`
-    );
-  }
-
-  // Validate estimated hours is a positive number
-  if (estimatedHours <= 0) {
-    throw new ApiError(
-      httpStatus.BAD_REQUEST,
-      "Estimated hours must be greater than 0"
     );
   }
 
@@ -106,9 +90,7 @@ const createTask = catchAsync(async (req, res) => {
     description,
     status,
     new Date(dueDate),
-    new Date(startDate),
-    estimatedHours,
-    notes
+    new Date(startDate)
   );
 
   sendResponse(
