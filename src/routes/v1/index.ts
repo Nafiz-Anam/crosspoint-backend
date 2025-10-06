@@ -1,7 +1,6 @@
 import express from "express";
 import authRoute from "./AuthRoute/auth.route";
 import employeeRoute from "./EmployeeRoute/employee.route";
-import permissionRoute from "./PermissionRoute/permission.route";
 import serviceRoute from "./ServiceRoute/service.route";
 import clientRoute from "./ClientRoute/client.route";
 import invoiceRoute from "./InvoiceRoute/invoice.route";
@@ -23,10 +22,6 @@ const defaultRoutes = [
   {
     path: "/employees",
     route: employeeRoute,
-  },
-  {
-    path: "/permissions",
-    route: permissionRoute,
   },
   {
     path: "/branches",

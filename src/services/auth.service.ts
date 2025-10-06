@@ -7,6 +7,7 @@ import prisma from "../client";
 import { encryptPassword, isPasswordMatch } from "../utils/encryption";
 import { AuthTokensResponse } from "../types/response";
 import exclude from "../utils/exclude";
+import { allRoles } from "../config/roles";
 
 /**
  * Login with employee email and password
@@ -24,6 +25,7 @@ const loginEmployeeWithEmailAndPassword = async (
     "name",
     "password",
     "role",
+    "permissions",
     "isEmailVerified",
     "createdAt",
     "updatedAt",
@@ -34,7 +36,18 @@ const loginEmployeeWithEmailAndPassword = async (
   ) {
     throw new ApiError(httpStatus.UNAUTHORIZED, "Incorrect email or password");
   }
-  return exclude(employee, ["password"]) as any;
+
+  // Ensure user has role-based permissions (fallback if database doesn't have them)
+  const rolePermissions = allRoles[employee.role] || [];
+  const userWithPermissions = {
+    ...employee,
+    permissions:
+      employee.permissions && employee.permissions.length > 0
+        ? employee.permissions
+        : rolePermissions,
+  };
+
+  return exclude(userWithPermissions, ["password"]) as any;
 };
 
 /**

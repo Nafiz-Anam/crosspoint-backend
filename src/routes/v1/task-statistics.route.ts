@@ -9,7 +9,7 @@ const router = express.Router();
 router.use(auth());
 router.use(loadUserPermissions);
 
-// Add the new statistics route
+// Add the statistics route - handles both employee and admin/manager/HR based on user role
 router.route("/statistics").get(taskController.getTaskStatistics);
 
 export default router;

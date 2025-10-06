@@ -1,4 +1,4 @@
-import { Employee, Permission, Prisma, Role } from "@prisma/client";
+import { Employee, Prisma, Role } from "@prisma/client";
 import httpStatus from "http-status";
 import prisma from "../client";
 import ApiError from "../utils/ApiError";
@@ -42,7 +42,6 @@ const createEmployee = async ({
   branchId,
   dateOfBirth,
   isActive = true,
-  permissions = [],
 }: {
   email: string;
   password: string;
@@ -52,7 +51,6 @@ const createEmployee = async ({
   branchId?: string;
   dateOfBirth: Date;
   isActive?: boolean;
-  permissions?: Permission[];
 }): Promise<
   Prisma.EmployeeGetPayload<{
     include: {
@@ -110,12 +108,10 @@ const createEmployee = async ({
     }
   }
 
-  // Get role-based permissions if no specific permissions provided
+  // Get role-based permissions
   const rolePermissions = allRoles[role] || [];
-  const finalPermissions =
-    permissions.length > 0 ? permissions : rolePermissions;
 
-  // Create employee with permissions (stored as enum array)
+  // Create employee with role-based permissions
   try {
     const employee = await prisma.employee.create({
       data: {
@@ -128,7 +124,7 @@ const createEmployee = async ({
         dateOfBirth,
         isActive,
         employeeId,
-        permissions: finalPermissions, // Use role-based or provided permissions
+        permissions: rolePermissions, // Use role-based permissions
       },
       include: {
         branch: true,

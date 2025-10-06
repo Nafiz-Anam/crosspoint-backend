@@ -2,7 +2,6 @@ export { default as authService } from "./auth.service";
 export { default as employeeService } from "./employee.service";
 export { default as tokenService } from "./token.service";
 export { default as emailService } from "./email.service";
-export { default as permissionService } from "./permission.service";
 export { default as serviceService } from "./service.service";
 export { default as clientService } from "./client.service";
 export { default as invoiceService } from "./invoice.service";

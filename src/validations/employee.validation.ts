@@ -22,7 +22,6 @@ const createEmployee = {
     }),
     dateOfBirth: Joi.date().required(),
     isActive: Joi.boolean().default(true),
-    permissions: Joi.array().items(Joi.string()).min(1).required(),
   }),
 };
 
@@ -62,7 +61,6 @@ const updateEmployee = {
       ),
       branchId: Joi.string(),
       isActive: Joi.boolean(),
-      permissions: Joi.array().items(Joi.string()),
     })
     .min(1),
 };

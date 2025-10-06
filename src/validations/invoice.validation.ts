@@ -16,6 +16,15 @@ const createInvoice = {
     discountAmount: Joi.number().optional().min(0),
     paymentMethod: Joi.string().optional().allow("", null),
     bankAccountId: Joi.string().optional().custom(objectId),
+    // Bank Details Fields (when bank account is selected)
+    bankDetails: Joi.object()
+      .keys({
+        bankName: Joi.string().optional(),
+        country: Joi.string().optional(),
+        iban: Joi.string().optional(),
+        swiftCode: Joi.string().optional(),
+      })
+      .optional(),
     // Company Information Fields
     companyName: Joi.string().optional().max(100),
     companyTagline: Joi.string().optional().max(200),
@@ -79,6 +88,15 @@ const updateInvoice = {
       discountAmount: Joi.number().min(0),
       paymentMethod: Joi.string(),
       bankAccountId: Joi.string().custom(objectId),
+      // Bank Details Fields (when bank account is selected)
+      bankDetails: Joi.object()
+        .keys({
+          bankName: Joi.string().optional(),
+          country: Joi.string().optional(),
+          iban: Joi.string().optional(),
+          swiftCode: Joi.string().optional(),
+        })
+        .optional(),
       // Company Information Fields
       companyName: Joi.string().optional().max(100),
       companyTagline: Joi.string().optional().max(200),

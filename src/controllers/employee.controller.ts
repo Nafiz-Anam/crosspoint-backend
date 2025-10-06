@@ -5,6 +5,7 @@ import catchAsync from "../utils/catchAsync";
 import { employeeService } from "../services";
 import sendResponse from "../utils/responseHandler";
 import cronService from "../services/cron.service";
+import { Role } from "@prisma/client";
 
 const createEmployee = catchAsync(async (req, res) => {
   const {
@@ -16,7 +17,6 @@ const createEmployee = catchAsync(async (req, res) => {
     branchId,
     dateOfBirth,
     isActive,
-    permissions,
   } = req.body;
 
   const employee = await employeeService.createEmployee({
@@ -28,7 +28,6 @@ const createEmployee = catchAsync(async (req, res) => {
     branchId,
     dateOfBirth: new Date(dateOfBirth),
     isActive,
-    permissions,
   });
 
   res.status(httpStatus.CREATED).send(employee);
@@ -48,6 +47,21 @@ const getEmployees = catchAsync(async (req, res) => {
     limit: options.limit ? parseInt(options.limit as string, 10) : undefined,
     page: options.page ? parseInt(options.page as string, 10) : undefined,
   };
+
+  // Exclude the currently logged-in employee and all admin users from the results
+  const currentUserId = req.user?.id;
+  const excludeConditions = [];
+
+  if (currentUserId) {
+    excludeConditions.push({ id: { not: currentUserId } });
+  }
+
+  // Always exclude admin users from employee list
+  excludeConditions.push({ role: { not: Role.ADMIN } });
+
+  if (excludeConditions.length > 0) {
+    filter.AND = excludeConditions;
+  }
 
   const result = await employeeService.queryEmployees(filter, processedOptions);
 

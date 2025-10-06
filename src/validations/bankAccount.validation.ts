@@ -14,8 +14,9 @@ export const bankAccountValidation = {
         "string.max": "Bank country cannot exceed 100 characters",
         "any.required": "Bank country is required",
       }),
-      bankIban: Joi.string().required().max(34).messages({
+      bankIban: Joi.string().required().min(15).max(34).messages({
         "string.empty": "Bank IBAN is required",
+        "string.min": "Bank IBAN must be at least 15 characters",
         "string.max": "Bank IBAN cannot exceed 34 characters",
         "any.required": "Bank IBAN is required",
       }),
@@ -87,7 +88,8 @@ export const bankAccountValidation = {
       bankCountry: Joi.string().optional().max(100).messages({
         "string.max": "Bank country cannot exceed 100 characters",
       }),
-      bankIban: Joi.string().optional().max(34).messages({
+      bankIban: Joi.string().optional().min(15).max(34).messages({
+        "string.min": "Bank IBAN must be at least 15 characters",
         "string.max": "Bank IBAN cannot exceed 34 characters",
       }),
       bankSwiftCode: Joi.string().optional().max(11).messages({
