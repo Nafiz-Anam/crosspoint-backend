@@ -15,6 +15,8 @@
     "lint:fix": "eslint . --fix",
     "db:push": "prisma db push",
     "db:studio": "prisma studio",
+    "create-admin": "node create-admin-user.js",
+    "create-admin:ts": "npx ts-node create-admin-user.ts",
     "prepare": "husky",
     "build": "npx rimraf build && tsc -p tsconfig.json"
   },

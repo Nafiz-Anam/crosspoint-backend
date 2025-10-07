@@ -9,22 +9,22 @@ export const bankAccountValidation = {
         "string.max": "Bank name cannot exceed 100 characters",
         "any.required": "Bank name is required",
       }),
-      bankCountry: Joi.string().required().max(100).messages({
-        "string.empty": "Bank country is required",
-        "string.max": "Bank country cannot exceed 100 characters",
-        "any.required": "Bank country is required",
+      accountNumber: Joi.string().required().max(50).messages({
+        "string.empty": "Account number is required",
+        "string.max": "Account number cannot exceed 50 characters",
+        "any.required": "Account number is required",
       }),
-      bankIban: Joi.string().required().min(15).max(34).messages({
-        "string.empty": "Bank IBAN is required",
+      bankIban: Joi.string().optional().allow("").min(15).max(34).messages({
         "string.min": "Bank IBAN must be at least 15 characters",
         "string.max": "Bank IBAN cannot exceed 34 characters",
-        "any.required": "Bank IBAN is required",
       }),
-      bankSwiftCode: Joi.string().optional().max(11).messages({
+      bankSwiftCode: Joi.string().optional().allow("").max(11).messages({
         "string.max": "Bank SWIFT code cannot exceed 11 characters",
       }),
-      accountName: Joi.string().optional().max(100).messages({
+      accountName: Joi.string().required().max(100).messages({
+        "string.empty": "Account name is required",
         "string.max": "Account name cannot exceed 100 characters",
+        "any.required": "Account name is required",
       }),
       isActive: Joi.boolean().optional().messages({
         "boolean.base": "isActive must be a boolean",
@@ -37,8 +37,11 @@ export const bankAccountValidation = {
       bankName: Joi.string().optional().messages({
         "string.base": "Bank name must be a string",
       }),
-      bankCountry: Joi.string().optional().messages({
-        "string.base": "Bank country must be a string",
+      accountNumber: Joi.string().optional().max(50).messages({
+        "string.max": "Account number cannot exceed 50 characters",
+      }),
+      bankCurrency: Joi.string().uppercase().length(3).optional().messages({
+        "string.length": "Currency must be a 3-letter ISO code",
       }),
       isActive: Joi.boolean().optional().messages({
         "boolean.base": "isActive must be a boolean",
@@ -82,21 +85,27 @@ export const bankAccountValidation = {
       }),
     }),
     body: Joi.object().keys({
-      bankName: Joi.string().optional().max(100).messages({
+      bankName: Joi.string().required().max(100).messages({
+        "string.empty": "Bank name is required",
         "string.max": "Bank name cannot exceed 100 characters",
+        "any.required": "Bank name is required",
       }),
-      bankCountry: Joi.string().optional().max(100).messages({
-        "string.max": "Bank country cannot exceed 100 characters",
+      accountNumber: Joi.string().required().max(50).messages({
+        "string.empty": "Account number is required",
+        "string.max": "Account number cannot exceed 50 characters",
+        "any.required": "Account number is required",
       }),
-      bankIban: Joi.string().optional().min(15).max(34).messages({
+      bankIban: Joi.string().optional().allow("").min(15).max(34).messages({
         "string.min": "Bank IBAN must be at least 15 characters",
         "string.max": "Bank IBAN cannot exceed 34 characters",
       }),
-      bankSwiftCode: Joi.string().optional().max(11).messages({
+      bankSwiftCode: Joi.string().optional().allow("").max(11).messages({
         "string.max": "Bank SWIFT code cannot exceed 11 characters",
       }),
-      accountName: Joi.string().optional().max(100).messages({
+      accountName: Joi.string().required().max(100).messages({
+        "string.empty": "Account name is required",
         "string.max": "Account name cannot exceed 100 characters",
+        "any.required": "Account name is required",
       }),
       isActive: Joi.boolean().optional().messages({
         "boolean.base": "isActive must be a boolean",

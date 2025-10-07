@@ -5,35 +5,49 @@ import ApiError from "../utils/ApiError";
 
 export interface BankAccountCreateData {
   bankName: string;
-  bankCountry: string;
-  bankIban: string;
+  bankIban?: string;
+  accountNumber: string;
   bankSwiftCode?: string;
-  accountName?: string;
+  accountName: string;
   isActive?: boolean;
 }
 
 export interface BankAccountUpdateData {
-  bankName?: string;
-  bankCountry?: string;
+  bankName: string;
   bankIban?: string;
+  accountNumber: string;
   bankSwiftCode?: string;
-  accountName?: string;
+  accountName: string;
   isActive?: boolean;
 }
 
 const createBankAccount = async (
   data: BankAccountCreateData
 ): Promise<BankAccount> => {
-  // Check if IBAN already exists
+  // Check if account number already exists
   const existingBankAccount = await prisma.bankAccount.findUnique({
-    where: { bankIban: data.bankIban },
+    where: { accountNumber: data.accountNumber },
   });
 
   if (existingBankAccount) {
     throw new ApiError(
       httpStatus.BAD_REQUEST,
-      "Bank account with this IBAN already exists"
+      "Bank account with this account number already exists"
     );
+  }
+
+  // Check if IBAN already exists (if provided)
+  if (data.bankIban) {
+    const existingIban = await prisma.bankAccount.findFirst({
+      where: { bankIban: data.bankIban },
+    });
+
+    if (existingIban) {
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        "Bank account with this IBAN already exists"
+      );
+    }
   }
 
   return prisma.bankAccount.create({
@@ -62,13 +76,15 @@ const getBankAccounts = async (
         mode: "insensitive" as const,
       },
     }),
-    ...(filter.bankCountry && {
-      bankCountry: {
-        contains: filter.bankCountry,
+    ...(filter.accountNumber && {
+      accountNumber: {
+        contains: filter.accountNumber,
         mode: "insensitive" as const,
       },
     }),
-    ...(filter.isActive !== undefined && { isActive: filter.isActive }),
+    ...(filter.isActive !== undefined && {
+      isActive: filter.isActive === "true" || filter.isActive === true,
+    }),
   };
 
   const [bankAccounts, total] = await Promise.all([
@@ -108,9 +124,26 @@ const updateBankAccountById = async (
     throw new ApiError(httpStatus.NOT_FOUND, "Bank account not found");
   }
 
+  // Check if account number is being updated and if it already exists
+  if (
+    updateData.accountNumber &&
+    updateData.accountNumber !== bankAccount.accountNumber
+  ) {
+    const existingAccountNumber = await prisma.bankAccount.findUnique({
+      where: { accountNumber: updateData.accountNumber },
+    });
+
+    if (existingAccountNumber) {
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        "Bank account with this account number already exists"
+      );
+    }
+  }
+
   // Check if IBAN is being updated and if it already exists
   if (updateData.bankIban && updateData.bankIban !== bankAccount.bankIban) {
-    const existingBankAccount = await prisma.bankAccount.findUnique({
+    const existingBankAccount = await prisma.bankAccount.findFirst({
       where: { bankIban: updateData.bankIban },
     });
 
