@@ -19,12 +19,45 @@ const createEmployee = catchAsync(async (req, res) => {
     isActive,
   } = req.body;
 
+  // Enforce role-based creation rules
+  const requesterRole = req.employee?.role as Role | undefined;
+  const targetRole: Role = (role as Role) || Role.EMPLOYEE;
+
+  // If requester role is unknown, block
+  if (!requesterRole) {
+    throw new ApiError(httpStatus.UNAUTHORIZED, "User not authenticated");
+  }
+
+  // Admin can create any role
+  if (requesterRole === Role.ADMIN) {
+    // allowed
+  } else if (requesterRole === Role.HR) {
+    // HR cannot create ADMIN
+    if (targetRole === Role.ADMIN) {
+      throw new ApiError(httpStatus.FORBIDDEN, "HR cannot create ADMIN users");
+    }
+  } else if (requesterRole === Role.MANAGER) {
+    // Manager can create EMPLOYEE only
+    if (targetRole !== Role.EMPLOYEE) {
+      throw new ApiError(
+        httpStatus.FORBIDDEN,
+        "Managers can create EMPLOYEE users only"
+      );
+    }
+  } else {
+    // Employees or other roles cannot create users
+    throw new ApiError(
+      httpStatus.FORBIDDEN,
+      "Insufficient permissions to create users"
+    );
+  }
+
   const employee = await employeeService.createEmployee({
     email,
     password,
     name,
     nationalIdentificationNumber,
-    role,
+    role: targetRole,
     branchId,
     dateOfBirth: new Date(dateOfBirth),
     isActive,
