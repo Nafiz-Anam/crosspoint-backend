@@ -18,6 +18,12 @@ declare global {
       email: string;
       name?: string | null; // 'name' can be null as per your API response
       role: Role; // Use the actual Prisma Role enum type
+      branchId?: string | null; // Branch ID for branch-based filtering
+      branch?: {
+        id: string;
+        branchId: string;
+        name: string;
+      } | null; // Branch information
       employeePermissions: PrismaPermission[]; // Array of Prisma Permission enum values
     }
 
@@ -27,6 +33,12 @@ declare global {
       email: string;
       name?: string | null;
       role: Role;
+      branchId?: string | null;
+      branch?: {
+        id: string;
+        branchId: string;
+        name: string;
+      } | null;
       employeePermissions?: PrismaPermission[];
     }
 
@@ -35,6 +47,10 @@ declare global {
       employee?: Employee; // The authenticated employee object
       user?: User; // Alias for compatibility
       employeePermissions?: PrismaPermission[]; // The array of permissions for convenience
+      branchFilter?: {
+        branchId?: string;
+        role: Role;
+      }; // Branch filtering information for managers
     }
   }
 }

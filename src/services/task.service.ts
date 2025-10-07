@@ -126,6 +126,7 @@ const createTask = async (
  * @param {Object} options - Query options
  * @param {string} currentUserId - Current user's ID for filtering
  * @param {string} currentUserRole - Current user's role
+ * @param {string} currentUserBranchId - Current user's branch ID for filtering
  * @returns {Promise<Task[]>}
  */
 const queryTasks = async (
@@ -137,7 +138,8 @@ const queryTasks = async (
     sortType?: "asc" | "desc";
   },
   currentUserId: string,
-  currentUserRole: string
+  currentUserRole: string,
+  currentUserBranchId?: string
 ): Promise<{
   results: Task[];
   page: number;
@@ -159,6 +161,14 @@ const queryTasks = async (
   // If user is EMPLOYEE role, only show tasks assigned to them
   if (currentUserRole === "EMPLOYEE") {
     whereClause.assignedEmployeeId = currentUserId;
+  }
+
+  // If user is MANAGER role, only show tasks from their branch
+  if (currentUserRole === "MANAGER" && currentUserBranchId) {
+    whereClause.client = {
+      ...whereClause.client,
+      branchId: currentUserBranchId,
+    };
   }
 
   const [tasks, totalResults] = await Promise.all([
@@ -379,30 +389,26 @@ const deleteTaskById = async (
  * Get task statistics based on user role and ID
  * @param {string} userId - Current user's ID
  * @param {Role} userRole - Current user's role
+ * @param {string} userBranchId - Current user's branch ID
  * @returns {Promise<Object>} Task statistics
  */
 const getTaskStatistics = async (
   userId: string,
-  userRole: Role
+  userRole: Role,
+  userBranchId?: string
 ): Promise<{ pending: number; completed: number; cancelled: number }> => {
   let filter = {};
 
   // For employees, only show tasks assigned to them
   if (userRole === Role.EMPLOYEE) {
     filter = { assignedEmployeeId: userId };
-  } else if (userRole === Role.MANAGER) {
+  } else if (userRole === Role.MANAGER && userBranchId) {
     // For managers, show tasks from their branch
-    const employee = await prisma.employee.findUnique({
-      where: { id: userId },
-      select: { branchId: true },
-    });
-    if (employee?.branchId) {
-      filter = {
-        client: {
-          branchId: employee.branchId,
-        },
-      };
-    }
+    filter = {
+      client: {
+        branchId: userBranchId,
+      },
+    };
   }
   // For admin and HR, show all tasks (no additional filter)
 

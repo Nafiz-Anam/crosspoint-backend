@@ -126,22 +126,36 @@ const allRoles = {
     Permission.UPDATE_INVOICE,
     Permission.DELETE_INVOICE,
 
+    // Service Management (read-only for invoice functionality)
+    Permission.READ_SERVICE,
+
+    // Bank Account Management (read-only for invoice functionality)
+    Permission.READ_BANK_ACCOUNT,
+
+    // Employee Management (read-only for invoice functionality)
+    Permission.READ_EMPLOYEE,
+
+    // Branch Management (read-only for invoice functionality)
+    Permission.READ_BRANCH,
+
     // Report Management (read-only for employees)
     Permission.VIEW_REPORTS,
 
-    // NOTE: Employee ONLY has access to:
-    // - Client Management
-    // - Task Management
-    // - Invoice Management
+    // NOTE: Employee has access to:
+    // - Client Management (full access)
+    // - Task Management (full access)
+    // - Invoice Management (full access)
+    // - Service Management (read-only for invoice items)
+    // - Bank Account Management (read-only for payment selection)
+    // - Employee Management (read-only for assignment)
+    // - Branch Management (read-only for branch information)
     // - View Reports (read-only)
     //
     // Employee does NOT have access to:
-    // - Employee Management
-    // - Branch Management
-    // - Service Management
+    // - CREATE/UPDATE/DELETE for Service, Bank Account, Employee, Branch
     // - Payment Methods Management
-    // - Bank Account Management
     // - Generate Reports
+    // - Assign Permissions
   ],
   [Role.MANAGER]: [
     // Employee Management
@@ -176,6 +190,12 @@ const allRoles = {
     Permission.UPDATE_BANK_ACCOUNT,
     Permission.DELETE_BANK_ACCOUNT,
 
+    // Service Management
+    Permission.CREATE_SERVICE,
+    Permission.READ_SERVICE,
+    Permission.UPDATE_SERVICE,
+    Permission.DELETE_SERVICE,
+
     // Report Management
     Permission.GENERATE_REPORTS,
     Permission.VIEW_REPORTS,
@@ -183,7 +203,6 @@ const allRoles = {
     // NOTE: Manager does NOT have access to:
     // - Branch Management (CREATE_BRANCH, READ_BRANCH, UPDATE_BRANCH, DELETE_BRANCH)
     // - Payment Methods Management (CREATE_PAYMENT_METHOD, READ_PAYMENT_METHOD, UPDATE_PAYMENT_METHOD, DELETE_PAYMENT_METHOD)
-    // - Service Management (CREATE_SERVICE, READ_SERVICE, UPDATE_SERVICE, DELETE_SERVICE)
   ],
 };
 

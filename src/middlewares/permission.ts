@@ -1,8 +1,9 @@
 import { Request, Response, NextFunction } from "express";
 import httpStatus from "http-status";
 import ApiError from "../utils/ApiError";
-import { Permission } from "@prisma/client";
+import { Permission, Role } from "@prisma/client";
 import prisma from "../client";
+import { roleRights } from "../config/roles";
 
 // Middleware to load user permissions
 export const loadUserPermissions = async (
@@ -25,8 +26,19 @@ export const loadUserPermissions = async (
       return next(new ApiError(httpStatus.NOT_FOUND, "Employee not found"));
     }
 
+    // Merge DB permissions with role-based defaults to avoid missing grants
+    const dbPermissions = employee.permissions || [];
+    const roleBasedDefaults = (roleRights.get(req.employee.role as Role) ||
+      []) as Permission[];
+    const mergedPermissions = Array.from(
+      new Set([...(dbPermissions as Permission[]), ...roleBasedDefaults])
+    );
+
     // Attach the permissions array to the request object
-    req.employeePermissions = employee.permissions || []; // Default to empty array if undefined
+    req.employeePermissions = mergedPermissions;
+
+    // (debug logs removed)
+
     next();
   } catch (error) {
     next(
@@ -54,6 +66,8 @@ export const requirePermission = (requiredPermission: Permission) => {
         new ApiError(httpStatus.FORBIDDEN, "Insufficient permissions")
       );
     }
+
+    // (debug logs removed)
 
     next();
   };

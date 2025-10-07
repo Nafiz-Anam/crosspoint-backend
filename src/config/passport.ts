@@ -30,7 +30,15 @@ const jwtVerify: VerifyCallback = async (payload, done) => {
         email: true,
         name: true,
         role: true,
+        branchId: true, // Include branch information
         permissions: true, // Directly fetch the permissions from the Employee model
+        branch: {
+          select: {
+            id: true,
+            branchId: true,
+            name: true,
+          },
+        },
       },
       where: { id: payload.sub },
     });
@@ -46,6 +54,8 @@ const jwtVerify: VerifyCallback = async (payload, done) => {
       email: employee.email,
       name: employee.name,
       role: employee.role,
+      branchId: employee.branchId, // Include branch ID
+      branch: employee.branch, // Include branch information
       employeePermissions: employee.permissions, // Attach the permissions array directly
     };
 

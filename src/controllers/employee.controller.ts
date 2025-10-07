@@ -63,7 +63,16 @@ const getEmployees = catchAsync(async (req, res) => {
     filter.AND = excludeConditions;
   }
 
-  const result = await employeeService.queryEmployees(filter, processedOptions);
+  const currentUserRole = req.user?.role;
+  const currentUserBranchId = req.user?.branchId || undefined;
+
+  const result = await employeeService.queryEmployees(
+    filter,
+    processedOptions,
+    undefined, // keys parameter
+    currentUserRole,
+    currentUserBranchId
+  );
 
   res.status(httpStatus.OK).json({
     success: true,

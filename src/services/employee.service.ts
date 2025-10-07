@@ -155,6 +155,8 @@ const createEmployee = async ({
  * @param {string} [options.sortBy] - Sort option in the format: sortField:(desc|asc)
  * @param {number} [options.limit] - Maximum number of results per page (default = 10)
  * @param {number} [options.page] - Current page (default = 1)
+ * @param {string} [currentUserRole] - Current user's role for filtering
+ * @param {string} [currentUserBranchId] - Current user's branch ID for filtering
  * @returns {Promise<QueryResult>}
  */
 const queryEmployees = async <Key extends keyof Employee>(
@@ -180,14 +182,26 @@ const queryEmployees = async <Key extends keyof Employee>(
     "permissions",
     "createdAt",
     "updatedAt",
-  ] as Key[]
+  ] as Key[],
+  currentUserRole?: string,
+  currentUserBranchId?: string
 ): Promise<Pick<Employee, Key>[]> => {
   const page = options.page ?? 1;
   const limit = options.limit ?? 10;
   const sortBy = options.sortBy;
   const sortType = options.sortType ?? "desc";
+
+  // Apply branch filtering for managers
+  let whereClause = { ...filter };
+  if (currentUserRole === "MANAGER" && currentUserBranchId) {
+    whereClause = {
+      ...whereClause,
+      branchId: currentUserBranchId,
+    };
+  }
+
   const employees = await prisma.employee.findMany({
-    where: filter,
+    where: whereClause,
     select: keys.reduce((obj, k) => ({ ...obj, [k]: true }), {}),
     skip: (page - 1) * limit,
     take: limit,

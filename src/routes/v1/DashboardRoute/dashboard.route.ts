@@ -5,6 +5,7 @@ import {
   loadUserPermissions,
   requirePermission,
 } from "../../../middlewares/permission";
+import { addBranchFilter } from "../../../middlewares/branchFilter";
 import { Permission } from "@prisma/client";
 import { validate } from "../../../middlewares/validate";
 import { dashboardValidation } from "../../../validations";
@@ -14,6 +15,7 @@ const router = express.Router();
 // All routes require authentication and permission loading
 router.use(auth());
 router.use(loadUserPermissions);
+router.use(addBranchFilter);
 
 // Dashboard statistics route
 router

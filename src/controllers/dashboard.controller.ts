@@ -27,7 +27,11 @@ const getDashboardStats = catchAsync(async (req: Request, res: Response) => {
     },
   };
 
-  if (branchId) {
+  // Apply branch filtering for managers
+  const user = req.employee || req.user;
+  if (user?.role === "MANAGER" && user?.branchId) {
+    whereClause.branchId = user.branchId;
+  } else if (branchId) {
     whereClause.branchId = branchId as string;
   }
 
@@ -102,12 +106,12 @@ const getDashboardStats = catchAsync(async (req: Request, res: Response) => {
 
     // Total clients
     prisma.client.count({
-      where: branchId ? { branchId: branchId as string } : {},
+      where: whereClause.branchId ? { branchId: whereClause.branchId } : {},
     }),
 
     // Total employees
     prisma.employee.count({
-      where: branchId ? { branchId: branchId as string } : {},
+      where: whereClause.branchId ? { branchId: whereClause.branchId } : {},
     }),
 
     // Total branches
@@ -225,7 +229,11 @@ const getWeeklyEarnings = catchAsync(async (req: Request, res: Response) => {
     },
   };
 
-  if (branchId) {
+  // Apply branch filtering for managers
+  const user = req.employee || req.user;
+  if (user?.role === "MANAGER" && user?.branchId) {
+    whereClause.branchId = user.branchId;
+  } else if (branchId) {
     whereClause.branchId = branchId as string;
   }
 
@@ -339,7 +347,11 @@ const getInvoiceStats = catchAsync(async (req: Request, res: Response) => {
     },
   };
 
-  if (branchId) {
+  // Apply branch filtering for managers
+  const user = req.employee || req.user;
+  if (user?.role === "MANAGER" && user?.branchId) {
+    whereClause.branchId = user.branchId;
+  } else if (branchId) {
     whereClause.branchId = branchId as string;
   }
 
@@ -412,7 +424,12 @@ const getProjectsOverview = catchAsync(async (req: Request, res: Response) => {
   const { branchId } = req.query;
 
   const whereClause: any = {};
-  if (branchId) {
+
+  // Apply branch filtering for managers
+  const user = req.employee || req.user;
+  if (user?.role === "MANAGER" && user?.branchId) {
+    whereClause.branchId = user.branchId;
+  } else if (branchId) {
     whereClause.branchId = branchId as string;
   }
 

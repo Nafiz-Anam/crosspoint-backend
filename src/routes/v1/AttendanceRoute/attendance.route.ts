@@ -1,6 +1,7 @@
 import express from "express";
 import auth from "../../../middlewares/auth";
 import { validate } from "../../../middlewares/validate";
+import { addBranchFilter } from "../../../middlewares/branchFilter";
 import { attendanceValidation } from "../../../validations/attendance.validation";
 import attendanceController from "../../../controllers/attendance.controller";
 
@@ -8,6 +9,7 @@ const router = express.Router();
 
 // All routes require authentication
 router.use(auth());
+router.use(addBranchFilter);
 
 // Employee endpoints (for their own attendance)
 router

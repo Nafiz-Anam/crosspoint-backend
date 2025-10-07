@@ -10,12 +10,17 @@ import cronService from "../services/cron.service";
 const getTaskStatistics = catchAsync(async (req, res) => {
   const userId = req.employee?.id;
   const userRole = req.employee?.role;
+  const userBranchId = req.employee?.branchId;
 
   if (!userId || !userRole) {
     throw new ApiError(httpStatus.UNAUTHORIZED, "User not authenticated");
   }
 
-  const stats = await taskService.getTaskStatistics(userId, userRole);
+  const stats = await taskService.getTaskStatistics(
+    userId,
+    userRole,
+    userBranchId || undefined
+  );
 
   sendResponse(
     res,
@@ -122,12 +127,14 @@ const getTasks = catchAsync(async (req, res) => {
 
   const currentUserId = req.user!.id;
   const currentUserRole = req.user!.role;
+  const currentUserBranchId = req.user!.branchId || undefined;
 
   const result = await taskService.queryTasks(
     filter,
     options,
     currentUserId,
-    currentUserRole
+    currentUserRole,
+    currentUserBranchId
   );
 
   sendResponse(

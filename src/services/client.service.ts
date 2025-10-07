@@ -105,6 +105,8 @@ const createClient = async (
  * @param {string} [options.sortBy] - Sort option in the format: sortField:(desc|asc)
  * @param {number} [options.limit] - Maximum number of results per page (default = 10)
  * @param {number} [options.page] - Current page (default = 1)
+ * @param {string} [currentUserRole] - Current user's role for filtering
+ * @param {string} [currentUserBranchId] - Current user's branch ID for filtering
  * @returns {Promise<Client[]>}
  */
 const queryClients = async (
@@ -114,15 +116,26 @@ const queryClients = async (
     page?: number;
     sortBy?: string;
     sortType?: "asc" | "desc";
-  }
+  },
+  currentUserRole?: string,
+  currentUserBranchId?: string
 ): Promise<Client[]> => {
   const page = options.page ?? 1;
   const limit = options.limit ?? 10;
   const sortBy = options.sortBy;
   const sortType = options.sortType ?? "desc";
 
+  // Apply branch filtering for managers
+  let whereClause = { ...filter };
+  if (currentUserRole === "MANAGER" && currentUserBranchId) {
+    whereClause = {
+      ...whereClause,
+      branchId: currentUserBranchId,
+    };
+  }
+
   const clients = await prisma.client.findMany({
-    where: filter,
+    where: whereClause,
     skip: (page - 1) * limit,
     take: limit,
     orderBy: sortBy ? { [sortBy]: sortType } : undefined,

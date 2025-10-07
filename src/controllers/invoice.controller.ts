@@ -124,7 +124,15 @@ const getInvoices = catchAsync(async (req, res) => {
     page: options.page ? parseInt(options.page as string, 10) : undefined,
   };
 
-  const result = await invoiceService.queryInvoices(filter, processedOptions);
+  const currentUserRole = req.user?.role;
+  const currentUserBranchId = req.user?.branchId || undefined;
+
+  const result = await invoiceService.queryInvoices(
+    filter,
+    processedOptions,
+    currentUserRole,
+    currentUserBranchId
+  );
 
   sendResponse(
     res,

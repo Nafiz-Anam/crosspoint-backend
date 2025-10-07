@@ -296,6 +296,8 @@ const createInvoice = async (
  * Query for invoices
  * @param {Object} filter - Prisma filter
  * @param {Object} options - Query options
+ * @param {string} [currentUserRole] - Current user's role for filtering
+ * @param {string} [currentUserBranchId] - Current user's branch ID for filtering
  * @returns {Promise<Invoice[]>}
  */
 const queryInvoices = async (
@@ -305,15 +307,26 @@ const queryInvoices = async (
     page?: number;
     sortBy?: string;
     sortType?: "asc" | "desc";
-  }
+  },
+  currentUserRole?: string,
+  currentUserBranchId?: string
 ): Promise<Invoice[]> => {
   const page = options.page ?? 1;
   const limit = options.limit ?? 10;
   const sortBy = options.sortBy;
   const sortType = options.sortType ?? "desc";
 
+  // Apply branch filtering for managers
+  let whereClause = { ...filter };
+  if (currentUserRole === "MANAGER" && currentUserBranchId) {
+    whereClause = {
+      ...whereClause,
+      branchId: currentUserBranchId,
+    };
+  }
+
   const invoices = await prisma.invoice.findMany({
-    where: filter,
+    where: whereClause,
     skip: (page - 1) * limit,
     take: limit,
     orderBy: sortBy ? { [sortBy]: sortType } : undefined,
