@@ -16,7 +16,9 @@
     "check-all-employees.js",
     "check-password.js",
     "reset-password.js",
-    "verify-password.js"
+    "verify-password.js",
+    "create-admin-user.js",
+    "create-admin-user.ts"
   ],
   "rules": {
     "indent": ["error", 2],
