@@ -224,6 +224,19 @@ model Task {
   @@map("tasks")
 }
 
+model Otp {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  otp       String
+  expiresAt DateTime
+  attempts  Int      @default(0)
+  verified  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("otps")
+}
+
 enum Role {
   ADMIN
   HR

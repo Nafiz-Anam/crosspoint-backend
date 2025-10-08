@@ -31,6 +31,23 @@ router.post(
 );
 router.post("/verify-email", authController.verifyEmail);
 
+// OTP-based password reset routes
+router.post(
+  "/forgot-password-otp",
+  validate(authValidation.forgotPassword),
+  authController.generateResetPasswordOTP
+);
+router.post(
+  "/verify-otp",
+  validate(authValidation.verifyOTP),
+  authController.verifyResetPasswordOTP
+);
+router.post(
+  "/reset-password-otp",
+  validate(authValidation.resetPasswordOTP),
+  authController.resetPasswordWithOTP
+);
+
 /**
  * @openapi
  * /auth/register:

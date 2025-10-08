@@ -23,12 +23,12 @@ const createClient = catchAsync(async (req, res) => {
     name,
     email,
     branchId,
+    nationalIdentificationNumber,
     phone,
     address,
     city,
     postalCode,
-    province,
-    nationalIdentificationNumber
+    province
   );
 
   sendResponse(

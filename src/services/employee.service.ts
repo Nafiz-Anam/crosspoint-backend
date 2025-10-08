@@ -22,6 +22,7 @@ const registerEmployee = async (email: string, password: string) => {
       email,
       password: await encryptPassword(password),
       dateOfBirth: new Date("1990-01-01"), // Default date of birth for basic employees
+      nationalIdentificationNumber: `TEMP-${Date.now()}`, // Temporary national ID for basic employees
     },
   });
 
@@ -46,7 +47,7 @@ const createEmployee = async ({
   email: string;
   password: string;
   name: string;
-  nationalIdentificationNumber?: string;
+  nationalIdentificationNumber: string;
   role?: Role;
   branchId?: string;
   dateOfBirth: Date;

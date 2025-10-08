@@ -9,11 +9,13 @@ async function createAdminUser() {
 
     // Check if admin user already exists
     const existingAdmin = await prisma.employee.findUnique({
-      where: { email: "admin@gmail.com" },
+      where: { email: "nafiza.aobs@gmail.com" },
     });
 
     if (existingAdmin) {
-      console.log("Admin user already exists with email: admin@gmail.com");
+      console.log(
+        "Admin user already exists with email: nafiza.aobs@gmail.com"
+      );
       return;
     }
 
@@ -81,10 +83,11 @@ async function createAdminUser() {
     // Create the admin user
     const adminUser = await prisma.employee.create({
       data: {
-        email: "admin@gmail.com",
+        email: "nafiza.aobs@gmail.com",
         name: "Admin User",
         password: hashedPassword,
         role: "ADMIN",
+        nationalIdentificationNumber: "ADMIN001", // Admin national ID
         dateOfBirth: new Date("1990-01-01"), // Default date of birth
         isEmailVerified: true,
         isActive: true,

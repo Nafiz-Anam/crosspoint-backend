@@ -188,6 +188,42 @@ const verifyEmail = catchAsync(async (req, res) => {
   res.status(httpStatus.NO_CONTENT).send();
 });
 
+const generateResetPasswordOTP = catchAsync(async (req, res) => {
+  const { email } = req.body;
+  const { otp, expiresAt } = await authService.generateResetPasswordOTP(email);
+
+  // Send OTP via email
+  await emailService.sendResetPasswordOTP(email, otp);
+
+  res.status(httpStatus.OK).json({
+    success: true,
+    message: "OTP sent to your email",
+    data: {
+      expiresAt: expiresAt.toISOString(),
+    },
+  });
+});
+
+const verifyResetPasswordOTP = catchAsync(async (req, res) => {
+  const { email, otp } = req.body;
+  await authService.verifyResetPasswordOTP(email, otp);
+
+  res.status(httpStatus.OK).json({
+    success: true,
+    message: "OTP verified successfully",
+  });
+});
+
+const resetPasswordWithOTP = catchAsync(async (req, res) => {
+  const { email, otp, password } = req.body;
+  await authService.resetPasswordWithOTP(email, otp, password);
+
+  res.status(httpStatus.OK).json({
+    success: true,
+    message: "Password reset successfully",
+  });
+});
+
 export default {
   register,
   login,
@@ -197,4 +233,7 @@ export default {
   resetPassword,
   sendVerificationEmail,
   verifyEmail,
+  generateResetPasswordOTP,
+  verifyResetPasswordOTP,
+  resetPasswordWithOTP,
 };

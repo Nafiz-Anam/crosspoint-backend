@@ -149,6 +149,150 @@ const verifyEmail = async (verifyEmailToken: string): Promise<void> => {
   }
 };
 
+/**
+ * Generate OTP for password reset
+ * @param {string} email
+ * @returns {Promise<{otp: string, expiresAt: Date}>}
+ */
+const generateResetPasswordOTP = async (
+  email: string
+): Promise<{ otp: string; expiresAt: Date }> => {
+  const employee = await employeeService.getEmployeeByEmail(email);
+  if (!employee) {
+    throw new ApiError(httpStatus.NOT_FOUND, "Email not found");
+  }
+
+  // Generate 6-digit OTP
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+  // Store OTP in database
+  await prisma.otp.upsert({
+    where: {
+      email: email,
+    },
+    update: {
+      otp: otp,
+      expiresAt: expiresAt,
+      attempts: 0,
+    },
+    create: {
+      email: email,
+      otp: otp,
+      expiresAt: expiresAt,
+      attempts: 0,
+    },
+  });
+
+  return { otp, expiresAt };
+};
+
+/**
+ * Verify OTP for password reset
+ * @param {string} email
+ * @param {string} otp
+ * @returns {Promise<boolean>}
+ */
+const verifyResetPasswordOTP = async (
+  email: string,
+  otp: string
+): Promise<boolean> => {
+  const otpRecord = await prisma.otp.findUnique({
+    where: {
+      email: email,
+    },
+  });
+
+  if (!otpRecord) {
+    throw new ApiError(httpStatus.NOT_FOUND, "OTP not found");
+  }
+
+  // Check if OTP has expired
+  if (new Date() > otpRecord.expiresAt) {
+    await prisma.otp.delete({
+      where: { email: email },
+    });
+    throw new ApiError(httpStatus.BAD_REQUEST, "OTP has expired");
+  }
+
+  // Check if too many attempts
+  if (otpRecord.attempts >= 3) {
+    await prisma.otp.delete({
+      where: { email: email },
+    });
+    throw new ApiError(httpStatus.BAD_REQUEST, "Too many failed attempts");
+  }
+
+  // Verify OTP
+  if (otpRecord.otp !== otp) {
+    await prisma.otp.update({
+      where: { email: email },
+      data: { attempts: otpRecord.attempts + 1 },
+    });
+    throw new ApiError(httpStatus.BAD_REQUEST, "Invalid OTP");
+  }
+
+  // OTP is valid, mark as verified but don't delete yet
+  await prisma.otp.update({
+    where: { email: email },
+    data: { verified: true },
+  });
+
+  return true;
+};
+
+/**
+ * Reset password with OTP
+ * @param {string} email
+ * @param {string} otp
+ * @param {string} newPassword
+ * @returns {Promise<void>}
+ */
+const resetPasswordWithOTP = async (
+  email: string,
+  otp: string,
+  newPassword: string
+): Promise<void> => {
+  // Check if OTP exists and is verified
+  const otpRecord = await prisma.otp.findUnique({
+    where: { email: email },
+  });
+
+  if (!otpRecord) {
+    throw new ApiError(httpStatus.NOT_FOUND, "OTP not found");
+  }
+
+  if (!otpRecord.verified) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "OTP not verified");
+  }
+
+  if (otpRecord.otp !== otp) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Invalid OTP");
+  }
+
+  // Check if OTP has expired
+  if (new Date() > otpRecord.expiresAt) {
+    await prisma.otp.delete({ where: { email: email } });
+    throw new ApiError(httpStatus.BAD_REQUEST, "OTP has expired");
+  }
+
+  // Get employee and update password
+  const employee = await employeeService.getEmployeeByEmail(email);
+  if (!employee) {
+    throw new ApiError(httpStatus.NOT_FOUND, "Employee not found");
+  }
+
+  const encryptedPassword = await encryptPassword(newPassword);
+  await employeeService.updateEmployeeById(employee.id, {
+    password: encryptedPassword,
+  });
+
+  // Delete OTP after successful password reset
+  await prisma.otp.delete({
+    where: { email: email },
+  });
+};
+
 export default {
   loginEmployeeWithEmailAndPassword,
   isPasswordMatch,
@@ -157,4 +301,7 @@ export default {
   refreshAuth,
   resetPassword,
   verifyEmail,
+  generateResetPasswordOTP,
+  verifyResetPasswordOTP,
+  resetPasswordWithOTP,
 };
