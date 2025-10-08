@@ -52,6 +52,16 @@ const getAllBranches = catchAsync(async (req, res) => {
   });
 });
 
+const getActiveBranches = catchAsync(async (req, res) => {
+  const branches = await branchService.getActiveBranches();
+  res.status(httpStatus.OK).json({
+    success: true,
+    status: httpStatus.OK,
+    message: "Active branches retrieved successfully",
+    data: branches,
+  });
+});
+
 const getBranchById = catchAsync(async (req, res) => {
   const { id } = req.params;
   const branch = await branchService.getBranchById(id);
@@ -173,6 +183,7 @@ const generateInvoiceId = catchAsync(async (req, res) => {
 export default {
   createBranch,
   getAllBranches,
+  getActiveBranches,
   getBranchById,
   getBranchByBranchId,
   updateBranch,

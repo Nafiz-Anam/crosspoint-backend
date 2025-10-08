@@ -8,6 +8,7 @@ const router = express.Router();
 
 router.post("/", auth(), branchController.createBranch);
 router.get("/", auth(), branchController.getAllBranches);
+router.get("/active", auth(), branchController.getActiveBranches);
 router.get("/:id", auth(), branchController.getBranchById);
 router.get(
   "/branch-id/:branchId",

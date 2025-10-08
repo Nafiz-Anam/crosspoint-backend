@@ -146,8 +146,15 @@ const createBranch = async (branchData: {
 // Get all branches
 const getAllBranches = async (): Promise<Branch[]> => {
   return prisma.branch.findMany({
+    orderBy: { createdAt: "desc" },
+  });
+};
+
+// Get active branches only (for dropdowns and selections)
+const getActiveBranches = async (): Promise<Branch[]> => {
+  return prisma.branch.findMany({
     where: { isActive: true },
-    orderBy: { branchId: "asc" },
+    orderBy: { createdAt: "desc" },
   });
 };
 
@@ -258,7 +265,6 @@ const getBranchStatistics = async (branchId: string) => {
 // Get all branches with statistics
 const getAllBranchesWithStatistics = async () => {
   const branches = await prisma.branch.findMany({
-    where: { isActive: true },
     include: {
       _count: {
         select: {
@@ -321,6 +327,7 @@ export default {
   generateInvoiceId,
   createBranch,
   getAllBranches,
+  getActiveBranches,
   getBranchById,
   getBranchByBranchId,
   updateBranch,

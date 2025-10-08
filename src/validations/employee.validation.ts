@@ -7,11 +7,7 @@ const createEmployee = {
     email: Joi.string().required().email(),
     password: Joi.string().required().custom(password),
     name: Joi.string().required(),
-    nationalIdentificationNumber: Joi.string()
-      .optional()
-      .allow(null, "")
-      .min(5)
-      .max(20),
+    nationalIdentificationNumber: Joi.string().required().min(5).max(20),
     role: Joi.string()
       .required()
       .valid(Role.ADMIN, Role.HR, Role.MANAGER, Role.EMPLOYEE),
@@ -52,7 +48,7 @@ const updateEmployee = {
       email: Joi.string().email(),
       password: Joi.string().custom(password),
       name: Joi.string(),
-      nationalIdentificationNumber: Joi.string().allow(null, "").min(5).max(20),
+      nationalIdentificationNumber: Joi.string().required().min(5).max(20),
       role: Joi.string().valid(
         Role.ADMIN,
         Role.HR,

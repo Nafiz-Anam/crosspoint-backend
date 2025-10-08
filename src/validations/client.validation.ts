@@ -4,11 +4,7 @@ import { objectId } from "./custom.validation";
 const createClient = {
   body: Joi.object().keys({
     name: Joi.string().required().min(2).max(100),
-    nationalIdentificationNumber: Joi.string()
-      .optional()
-      .allow(null, "")
-      .min(5)
-      .max(20),
+    nationalIdentificationNumber: Joi.string().required().min(5).max(20),
     email: Joi.string().required().email(),
     phone: Joi.string().optional().allow(null, ""),
     address: Joi.string().optional().allow(null, "").max(500),
@@ -57,7 +53,7 @@ const updateClient = {
   body: Joi.object()
     .keys({
       name: Joi.string().min(2).max(100),
-      nationalIdentificationNumber: Joi.string().allow(null, "").min(5).max(20),
+      nationalIdentificationNumber: Joi.string().required().min(5).max(20),
       email: Joi.string().email(),
       phone: Joi.string().allow(null, ""),
       address: Joi.string().allow(null, "").max(500),

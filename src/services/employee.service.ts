@@ -205,7 +205,7 @@ const queryEmployees = async <Key extends keyof Employee>(
     select: keys.reduce((obj, k) => ({ ...obj, [k]: true }), {}),
     skip: (page - 1) * limit,
     take: limit,
-    orderBy: sortBy ? { [sortBy]: sortType } : undefined,
+    orderBy: sortBy ? { [sortBy]: sortType } : { createdAt: "desc" },
   });
   return employees as Pick<Employee, Key>[];
 };

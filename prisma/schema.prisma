@@ -39,7 +39,7 @@ model Branch {
 model Employee {
   id                           String       @id @default(uuid())
   employeeId                   String?      @unique // Format: EMP-BR001-001, EMP-BR002-001, etc.
-  nationalIdentificationNumber String?      @unique // National ID number (unique)
+  nationalIdentificationNumber String       @unique // Codice fiscale (unique, required)
   email                        String       @unique
   name                         String?
   password                     String
@@ -95,7 +95,7 @@ model Service {
 model Client {
   id                           String    @id @default(uuid())
   clientId                     String?   @unique // Format: CLT-BR001-001, CLT-BR002-001, etc.
-  nationalIdentificationNumber String?   @unique // National ID number (unique)
+  nationalIdentificationNumber String    @unique // Codice fiscale (unique, required)
   name                         String
   email                        String    @unique
   phone                        String?

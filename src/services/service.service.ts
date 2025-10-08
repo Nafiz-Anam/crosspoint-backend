@@ -67,7 +67,7 @@ const queryServices = async (
     where: filter,
     skip: (page - 1) * limit,
     take: limit,
-    orderBy: sortBy ? { [sortBy]: sortType } : undefined,
+    orderBy: sortBy ? { [sortBy]: sortType } : { createdAt: "desc" },
     include: {
       _count: {
         select: {

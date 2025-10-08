@@ -11,10 +11,17 @@ export const serviceValidation = {
       }),
       category: Joi.string()
         .optional()
-        .valid("Consulting", "Development", "Design")
+        .valid(
+          "CAF",
+          "Patronato",
+          "Immigrazione",
+          "Partita IVA",
+          "Reparto Legale",
+          "Varie pratiche"
+        )
         .messages({
           "any.only":
-            "Category must be one of: Consulting, Development, Design",
+            "Category must be one of: CAF, Patronato, Immigrazione, Partita IVA, Reparto Legale, Varie pratiche",
         }),
     }),
   },
@@ -33,10 +40,17 @@ export const serviceValidation = {
         }),
         category: Joi.string()
           .optional()
-          .valid("Consulting", "Development", "Design")
+          .valid(
+            "CAF",
+            "Patronato",
+            "Immigrazione",
+            "Partita IVA",
+            "Reparto Legale",
+            "Varie pratiche"
+          )
           .messages({
             "any.only":
-              "Category must be one of: Consulting, Development, Design",
+              "Category must be one of: CAF, Patronato, Immigrazione, Partita IVA, Reparto Legale, Varie pratiche",
           }),
       })
       .min(1),

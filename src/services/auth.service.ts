@@ -27,6 +27,7 @@ const loginEmployeeWithEmailAndPassword = async (
     "role",
     "permissions",
     "isEmailVerified",
+    "branchId",
     "createdAt",
     "updatedAt",
   ]);
