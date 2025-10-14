@@ -67,18 +67,24 @@ const createEmployee = catchAsync(async (req, res) => {
 });
 
 const getEmployees = catchAsync(async (req, res) => {
-  const filter = pick(req.query, [
-    "name",
-    "nationalIdentificationNumber",
-    "role",
-  ]);
-  const options = pick(req.query, ["sortBy", "limit", "page"]);
+  const {
+    page = 1,
+    limit = 10,
+    search,
+    sortBy = "createdAt",
+    sortType = "desc",
+    role,
+    isActive,
+  } = req.query;
 
-  // Convert string values to appropriate types for options
-  const processedOptions = {
-    ...options,
-    limit: options.limit ? parseInt(options.limit as string, 10) : undefined,
-    page: options.page ? parseInt(options.page as string, 10) : undefined,
+  const paginationOptions = {
+    page: parseInt(page as string),
+    limit: parseInt(limit as string),
+    search: search as string,
+    sortBy: sortBy as string,
+    sortType: sortType as "asc" | "desc",
+    role: role as string,
+    isActive: isActive as string,
   };
 
   // Exclude the currently logged-in employee and all admin users from the results
@@ -92,25 +98,29 @@ const getEmployees = catchAsync(async (req, res) => {
   // Always exclude admin users from employee list
   excludeConditions.push({ role: { not: Role.ADMIN } });
 
-  if (excludeConditions.length > 0) {
-    filter.AND = excludeConditions;
-  }
-
   const currentUserRole = req.user?.role;
   const currentUserBranchId = req.user?.branchId || undefined;
 
-  const result = await employeeService.queryEmployees(
-    filter,
-    processedOptions,
-    undefined, // keys parameter
+  const result = await employeeService.getEmployeesWithPagination(
+    paginationOptions,
+    excludeConditions,
     currentUserRole,
     currentUserBranchId
   );
 
   res.status(httpStatus.OK).json({
     success: true,
-    message: "Employee retrieved successfully",
-    data: result,
+    status: httpStatus.OK,
+    message: "Employees retrieved successfully",
+    data: result.data,
+    pagination: {
+      page: result.page,
+      limit: result.limit,
+      total: result.total,
+      totalPages: result.totalPages,
+      hasNext: result.hasNext,
+      hasPrev: result.hasPrev,
+    },
   });
 });
 

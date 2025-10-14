@@ -50,7 +50,7 @@ const createInvoice = {
 
 const getInvoices = {
   query: Joi.object().keys({
-    clientId: Joi.string().custom(objectId),
+    search: Joi.string().optional(),
     branchId: Joi.string().custom(objectId),
     employeeId: Joi.string().custom(objectId),
     status: Joi.string().valid(...Object.values(InvoiceStatus)),

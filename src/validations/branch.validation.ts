@@ -48,6 +48,20 @@ export const branchValidation = {
     }),
   }),
 
+  getBranches: {
+    query: Joi.object().keys({
+      search: Joi.string().optional(),
+      name: Joi.string().optional(),
+      city: Joi.string().optional(),
+      province: Joi.string().optional(),
+      isActive: Joi.boolean().optional(),
+      sortBy: Joi.string().optional(),
+      sortType: Joi.string().valid("asc", "desc").optional(),
+      limit: Joi.number().integer().min(1).max(100).optional(),
+      page: Joi.number().integer().min(1).optional(),
+    }),
+  },
+
   getBranch: Joi.object().keys({
     params: Joi.object().keys({
       id: Joi.string().custom(objectId).required().messages({

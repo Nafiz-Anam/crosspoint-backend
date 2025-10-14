@@ -20,6 +20,7 @@ const createClient = {
 
 const getClients = {
   query: Joi.object().keys({
+    search: Joi.string().optional(),
     name: Joi.string(),
     nationalIdentificationNumber: Joi.string(),
     email: Joi.string(),
@@ -35,6 +36,7 @@ const getClients = {
       "COMPLETED"
     ),
     sortBy: Joi.string(),
+    sortType: Joi.string().valid("asc", "desc").optional(),
     limit: Joi.number().integer().min(1).max(100).default(10),
     page: Joi.number().integer().min(1).default(1),
   }),

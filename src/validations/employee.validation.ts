@@ -23,13 +23,15 @@ const createEmployee = {
 
 const getEmployees = {
   query: Joi.object().keys({
+    search: Joi.string().optional(),
     name: Joi.string(),
     nationalIdentificationNumber: Joi.string(),
     role: Joi.string().valid(Role.ADMIN, Role.HR, Role.MANAGER, Role.EMPLOYEE),
     isActive: Joi.boolean(),
     sortBy: Joi.string(),
-    limit: Joi.number().integer(),
-    page: Joi.number().integer(),
+    sortType: Joi.string().valid("asc", "desc").optional(),
+    limit: Joi.number().integer().min(1).max(100).optional(),
+    page: Joi.number().integer().min(1).optional(),
   }),
 };
 

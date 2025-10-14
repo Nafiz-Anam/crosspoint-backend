@@ -42,28 +42,42 @@ const createBankAccount = catchAsync(async (req, res) => {
 });
 
 const getBankAccounts = catchAsync(async (req, res) => {
-  const filter = pick(req.query, ["bankName", "accountNumber", "isActive"]);
-  const options = pick(req.query, ["sortBy", "sortType", "limit", "page"]);
+  const {
+    page = 1,
+    limit = 10,
+    search,
+    sortBy = "createdAt",
+    sortType = "desc",
+    isActive,
+  } = req.query;
 
-  // Convert string values to appropriate types for options
-  const processedOptions = {
-    ...options,
-    limit: options.limit ? parseInt(options.limit as string, 10) : undefined,
-    page: options.page ? parseInt(options.page as string, 10) : undefined,
+  const paginationOptions = {
+    page: parseInt(page as string),
+    limit: parseInt(limit as string),
+    search: search as string,
+    sortBy: sortBy as string,
+    sortType: sortType as "asc" | "desc",
+    isActive: isActive as string,
   };
 
-  const result = await bankAccountService.getBankAccounts(
-    filter,
-    processedOptions
+  const result = await bankAccountService.getBankAccountsWithPagination(
+    paginationOptions
   );
 
-  sendResponse(
-    res,
-    httpStatus.OK,
-    true,
-    result,
-    "Bank accounts retrieved successfully"
-  );
+  res.status(httpStatus.OK).json({
+    success: true,
+    status: httpStatus.OK,
+    message: "Bank accounts retrieved successfully",
+    data: result.data,
+    pagination: {
+      page: result.page,
+      limit: result.limit,
+      total: result.total,
+      totalPages: result.totalPages,
+      hasNext: result.hasNext,
+      hasPrev: result.hasPrev,
+    },
+  });
 });
 
 const getBankAccount = catchAsync(async (req, res) => {

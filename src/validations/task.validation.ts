@@ -17,6 +17,7 @@ const createTask = {
 
 const getTasks = {
   query: Joi.object().keys({
+    search: Joi.string().optional(),
     title: Joi.string().optional(),
     status: Joi.string()
       .valid(...Object.values(TaskStatus))
@@ -24,7 +25,9 @@ const getTasks = {
     clientId: Joi.string().optional().uuid(),
     serviceId: Joi.string().optional().uuid(),
     assignedEmployeeId: Joi.string().optional().uuid(),
+    branchId: Joi.string().optional().uuid(),
     sortBy: Joi.string().optional(),
+    sortType: Joi.string().valid("asc", "desc").optional(),
     limit: Joi.number().integer().min(1).max(100).optional(),
     page: Joi.number().integer().min(1).optional(),
   }),

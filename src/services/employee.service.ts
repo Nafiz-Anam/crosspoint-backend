@@ -359,9 +359,105 @@ const uploadProfileImage = async (file: any): Promise<string> => {
   }
 };
 
+// Get all employees with pagination
+const getEmployeesWithPagination = async (
+  options: {
+    page: number;
+    limit: number;
+    search?: string;
+    sortBy: string;
+    sortType: "asc" | "desc";
+    role?: string;
+    isActive?: string;
+  },
+  excludeConditions: any[] = [],
+  currentUserRole?: string,
+  currentUserBranchId?: string
+) => {
+  const { page, limit, search, sortBy, sortType, role, isActive } = options;
+  const skip = (page - 1) * limit;
+
+  // Build where clause for search
+  let whereClause: any = {};
+
+  if (search) {
+    whereClause.OR = [
+      { name: { contains: search, mode: "insensitive" as const } },
+      { email: { contains: search, mode: "insensitive" as const } },
+      { employeeId: { contains: search, mode: "insensitive" as const } },
+      {
+        nationalIdentificationNumber: {
+          contains: search,
+          mode: "insensitive" as const,
+        },
+      },
+    ];
+  }
+
+  // Apply role filtering
+  if (role) {
+    whereClause.role = role;
+  }
+
+  // Apply status filtering
+  if (isActive !== undefined && isActive !== "") {
+    whereClause.isActive = isActive === "true";
+  }
+
+  // Apply exclude conditions
+  if (excludeConditions.length > 0) {
+    whereClause.AND = excludeConditions;
+  }
+
+  // Apply branch filtering for managers
+  if (currentUserRole === "MANAGER" && currentUserBranchId) {
+    whereClause.branchId = currentUserBranchId;
+  }
+
+  // Build orderBy clause
+  const orderByClause = {
+    [sortBy]: sortType,
+  };
+
+  // Get total count for pagination
+  const total = await prisma.employee.count({ where: whereClause });
+
+  // Get paginated data
+  const employees = await prisma.employee.findMany({
+    where: whereClause,
+    orderBy: orderByClause,
+    skip,
+    take: limit,
+    include: {
+      branch: {
+        select: {
+          id: true,
+          name: true,
+          city: true,
+        },
+      },
+    },
+  });
+
+  const totalPages = Math.ceil(total / limit);
+  const hasNext = page < totalPages;
+  const hasPrev = page > 1;
+
+  return {
+    data: employees,
+    page,
+    limit,
+    total,
+    totalPages,
+    hasNext,
+    hasPrev,
+  };
+};
+
 export default {
   createEmployee,
   queryEmployees,
+  getEmployeesWithPagination,
   getEmployeeById,
   getEmployeeByEmail,
   updateEmployeeById,

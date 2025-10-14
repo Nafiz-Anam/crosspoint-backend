@@ -693,10 +693,117 @@ const createInvoiceFromTask = async (
   return createInvoice(invoiceData);
 };
 
+// Get all invoices with pagination
+const getInvoicesWithPagination = async (
+  options: {
+    page: number;
+    limit: number;
+    search?: string;
+    sortBy: string;
+    sortType: "asc" | "desc";
+    status?: string;
+  },
+  currentUserRole?: string,
+  currentUserBranchId?: string
+) => {
+  const { page, limit, search, sortBy, sortType, status } = options;
+  const skip = (page - 1) * limit;
+
+  // Build where clause for search
+  let whereClause: any = {};
+
+  if (search) {
+    whereClause.OR = [
+      { invoiceNumber: { contains: search, mode: "insensitive" as const } },
+      { client: { name: { contains: search, mode: "insensitive" as const } } },
+      { client: { email: { contains: search, mode: "insensitive" as const } } },
+      {
+        employee: { name: { contains: search, mode: "insensitive" as const } },
+      },
+      { branch: { name: { contains: search, mode: "insensitive" as const } } },
+    ];
+  }
+
+  // Apply status filtering
+  if (status) {
+    whereClause.status = status;
+  }
+
+  // Apply branch filtering for managers
+  if (currentUserRole === "MANAGER" && currentUserBranchId) {
+    whereClause.branchId = currentUserBranchId;
+  }
+
+  // Build orderBy clause
+  const orderByClause = {
+    [sortBy]: sortType,
+  };
+
+  // Get total count for pagination
+  const total = await prisma.invoice.count({ where: whereClause });
+
+  // Get paginated data
+  const invoices = await prisma.invoice.findMany({
+    where: whereClause,
+    include: {
+      client: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      },
+      branch: {
+        select: {
+          id: true,
+          name: true,
+          city: true,
+        },
+      },
+      employee: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      },
+      items: {
+        include: {
+          service: {
+            select: {
+              id: true,
+              name: true,
+              category: true,
+            },
+          },
+        },
+      },
+    },
+    orderBy: orderByClause,
+    skip,
+    take: limit,
+  });
+
+  const totalPages = Math.ceil(total / limit);
+  const hasNext = page < totalPages;
+  const hasPrev = page > 1;
+
+  return {
+    data: invoices,
+    page,
+    limit,
+    total,
+    totalPages,
+    hasNext,
+    hasPrev,
+  };
+};
+
 export default {
   createInvoice,
   createInvoiceFromTask,
   queryInvoices,
+  getInvoicesWithPagination,
   getInvoiceById,
   updateInvoiceById,
   updateInvoiceWithItems,

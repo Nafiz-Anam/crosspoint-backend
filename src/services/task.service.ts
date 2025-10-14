@@ -475,9 +475,141 @@ const getTasksByClientId = async (
   return tasks;
 };
 
+// Get all tasks with pagination
+const getTasksWithPagination = async (
+  options: {
+    page: number;
+    limit: number;
+    search?: string;
+    sortBy: string;
+    sortType: "asc" | "desc";
+    status?: string;
+    assignedEmployeeId?: string;
+    branchId?: string;
+  },
+  currentUserId: string,
+  currentUserRole: string,
+  currentUserBranchId?: string
+) => {
+  const {
+    page,
+    limit,
+    search,
+    sortBy,
+    sortType,
+    status,
+    assignedEmployeeId,
+    branchId,
+  } = options;
+  const skip = (page - 1) * limit;
+
+  // Build where clause for search
+  let whereClause: any = {};
+
+  if (search) {
+    whereClause.OR = [
+      { title: { contains: search, mode: "insensitive" as const } },
+      { description: { contains: search, mode: "insensitive" as const } },
+      { client: { name: { contains: search, mode: "insensitive" as const } } },
+      { service: { name: { contains: search, mode: "insensitive" as const } } },
+      {
+        assignedEmployee: {
+          name: { contains: search, mode: "insensitive" as const },
+        },
+      },
+    ];
+  }
+
+  // Apply status filtering
+  if (status) {
+    whereClause.status = status;
+  }
+
+  // Apply assigned employee filtering
+  if (assignedEmployeeId) {
+    whereClause.assignedEmployeeId = assignedEmployeeId;
+  }
+
+  // Apply branch filtering
+  if (branchId) {
+    whereClause.client = {
+      ...whereClause.client,
+      branchId: branchId,
+    };
+  }
+
+  // Apply role-based filtering
+  if (currentUserRole === "EMPLOYEE") {
+    whereClause.assignedEmployeeId = currentUserId;
+  }
+
+  if (currentUserRole === "MANAGER" && currentUserBranchId) {
+    whereClause.client = {
+      ...whereClause.client,
+      branchId: currentUserBranchId,
+    };
+  }
+
+  // Build orderBy clause
+  const orderByClause = {
+    [sortBy]: sortType,
+  };
+
+  // Get total count for pagination
+  const total = await prisma.task.count({ where: whereClause });
+
+  // Get paginated data
+  const tasks = await prisma.task.findMany({
+    where: whereClause,
+    include: {
+      client: {
+        include: {
+          branch: true,
+        },
+      },
+      service: true,
+      assignedEmployee: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          employeeId: true,
+          role: true,
+        },
+      },
+      invoices: {
+        select: {
+          id: true,
+          invoiceId: true,
+          status: true,
+          totalAmount: true,
+        },
+      },
+    },
+    orderBy: orderByClause,
+    skip,
+    take: limit,
+  });
+
+  const totalPages = Math.ceil(total / limit);
+  const hasNext = page < totalPages;
+  const hasPrev = page > 1;
+
+  return {
+    data: tasks,
+    page,
+    limit,
+    total,
+    totalPages,
+    hasNext,
+    hasPrev,
+  };
+};
+
 export {
   createTask,
   queryTasks,
+  getTasksWithPagination,
   getTaskById,
   updateTaskById,
   deleteTaskById,

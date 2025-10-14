@@ -18,7 +18,9 @@
     "reset-password.js",
     "verify-password.js",
     "create-admin-user.js",
-    "create-admin-user.ts"
+    "create-admin-user.ts",
+    "seed-database.js",
+    "seed-database.ts"
   ],
   "rules": {
     "indent": ["error", 2],

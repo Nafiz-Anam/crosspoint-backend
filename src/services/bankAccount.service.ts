@@ -193,9 +193,71 @@ const getActiveBankAccounts = async (): Promise<BankAccount[]> => {
   });
 };
 
+// Get all bank accounts with pagination
+const getBankAccountsWithPagination = async (options: {
+  page: number;
+  limit: number;
+  search?: string;
+  sortBy: string;
+  sortType: "asc" | "desc";
+  isActive?: string;
+}) => {
+  const { page, limit, search, sortBy, sortType, isActive } = options;
+  const skip = (page - 1) * limit;
+
+  // Build where clause for search and filters
+  let whereClause: any = {};
+
+  if (search) {
+    whereClause.OR = [
+      { bankName: { contains: search, mode: "insensitive" as const } },
+      { accountName: { contains: search, mode: "insensitive" as const } },
+      { accountNumber: { contains: search, mode: "insensitive" as const } },
+      { bankIban: { contains: search, mode: "insensitive" as const } },
+      { bankSwiftCode: { contains: search, mode: "insensitive" as const } },
+    ];
+  }
+
+  // Apply isActive filtering
+  if (isActive !== undefined && isActive !== "") {
+    whereClause.isActive = isActive === "true";
+  }
+
+  // Build orderBy clause
+  const orderByClause = {
+    [sortBy]: sortType,
+  };
+
+  // Get total count for pagination
+  const total = await prisma.bankAccount.count({ where: whereClause });
+
+  // Get paginated data
+  const bankAccounts = await prisma.bankAccount.findMany({
+    where: whereClause,
+    orderBy: orderByClause,
+    skip,
+    take: limit,
+  });
+
+  const totalPages = Math.ceil(total / limit);
+  const hasNext = page < totalPages;
+  const hasPrev = page > 1;
+
+  return {
+    data: bankAccounts,
+    page,
+    limit,
+    total,
+    totalPages,
+    hasNext,
+    hasPrev,
+  };
+};
+
 export default {
   createBankAccount,
   getBankAccounts,
+  getBankAccountsWithPagination,
   getBankAccountById,
   updateBankAccountById,
   deleteBankAccountById,

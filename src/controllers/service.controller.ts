@@ -19,25 +19,42 @@ const createService = catchAsync(async (req, res) => {
 });
 
 const getServices = catchAsync(async (req, res) => {
-  const filter = pick(req.query, ["name", "category"]);
-  const options = pick(req.query, ["sortBy", "limit", "page"]);
+  const {
+    page = 1,
+    limit = 10,
+    search,
+    sortBy = "createdAt",
+    sortType = "desc",
+    category,
+  } = req.query;
 
-  // Convert string values to appropriate types for options
-  const processedOptions = {
-    ...options,
-    limit: options.limit ? parseInt(options.limit as string, 10) : undefined,
-    page: options.page ? parseInt(options.page as string, 10) : undefined,
+  const paginationOptions = {
+    page: parseInt(page as string),
+    limit: parseInt(limit as string),
+    search: search as string,
+    sortBy: sortBy as string,
+    sortType: sortType as "asc" | "desc",
+    category: category as string,
   };
 
-  const result = await serviceService.queryServices(filter, processedOptions);
-
-  sendResponse(
-    res,
-    httpStatus.OK,
-    true,
-    result,
-    "Services retrieved successfully"
+  const result = await serviceService.getServicesWithPagination(
+    paginationOptions
   );
+
+  res.status(httpStatus.OK).json({
+    success: true,
+    status: httpStatus.OK,
+    message: "Services retrieved successfully",
+    data: result.data,
+    pagination: {
+      page: result.page,
+      limit: result.limit,
+      total: result.total,
+      totalPages: result.totalPages,
+      hasNext: result.hasNext,
+      hasPrev: result.hasPrev,
+    },
+  });
 });
 
 const getService = catchAsync(async (req, res) => {

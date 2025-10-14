@@ -56,6 +56,18 @@ export const serviceValidation = {
       .min(1),
   },
 
+  getServices: {
+    query: Joi.object().keys({
+      search: Joi.string().optional(),
+      name: Joi.string().optional(),
+      category: Joi.string().optional(),
+      sortBy: Joi.string().optional(),
+      sortType: Joi.string().valid("asc", "desc").optional(),
+      limit: Joi.number().integer().min(1).max(100).optional(),
+      page: Joi.number().integer().min(1).optional(),
+    }),
+  },
+
   getService: {
     params: Joi.object().keys({
       serviceId: Joi.string().required(),

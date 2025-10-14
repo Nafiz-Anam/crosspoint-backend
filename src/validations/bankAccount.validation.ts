@@ -34,6 +34,9 @@ export const bankAccountValidation = {
 
   getBankAccounts: {
     query: Joi.object().keys({
+      search: Joi.string().optional().messages({
+        "string.base": "Search must be a string",
+      }),
       bankName: Joi.string().optional().messages({
         "string.base": "Bank name must be a string",
       }),

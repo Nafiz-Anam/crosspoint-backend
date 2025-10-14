@@ -43,12 +43,41 @@ const createBranch = catchAsync(async (req, res) => {
 });
 
 const getAllBranches = catchAsync(async (req, res) => {
-  const branches = await branchService.getAllBranches();
+  const {
+    page = 1,
+    limit = 10,
+    search,
+    sortBy = "createdAt",
+    sortType = "desc",
+    isActive,
+  } = req.query;
+
+  const paginationOptions = {
+    page: parseInt(page as string),
+    limit: parseInt(limit as string),
+    search: search as string,
+    sortBy: sortBy as string,
+    sortType: sortType as "asc" | "desc",
+    isActive: isActive as string,
+  };
+
+  const result = await branchService.getAllBranchesWithPagination(
+    paginationOptions
+  );
+
   res.status(httpStatus.OK).json({
     success: true,
     status: httpStatus.OK,
     message: "Branches retrieved successfully",
-    data: branches,
+    data: result.data,
+    pagination: {
+      page: result.page,
+      limit: result.limit,
+      total: result.total,
+      totalPages: result.totalPages,
+      hasNext: result.hasNext,
+      hasPrev: result.hasPrev,
+    },
   });
 });
 

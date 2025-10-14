@@ -249,9 +249,100 @@ const deleteClientById = async (clientId: string): Promise<Client> => {
   return client;
 };
 
+// Get all clients with pagination
+const getClientsWithPagination = async (
+  options: {
+    page: number;
+    limit: number;
+    search?: string;
+    sortBy: string;
+    sortType: "asc" | "desc";
+    branchId?: string;
+  },
+  currentUserRole?: string,
+  currentUserBranchId?: string
+) => {
+  const { page, limit, search, sortBy, sortType, branchId } = options;
+  const skip = (page - 1) * limit;
+
+  // Build where clause for search
+  let whereClause: any = {};
+
+  if (search) {
+    whereClause.OR = [
+      { name: { contains: search, mode: "insensitive" as const } },
+      { email: { contains: search, mode: "insensitive" as const } },
+      { clientId: { contains: search, mode: "insensitive" as const } },
+      {
+        nationalIdentificationNumber: {
+          contains: search,
+          mode: "insensitive" as const,
+        },
+      },
+      { phone: { contains: search, mode: "insensitive" as const } },
+    ];
+  }
+
+  // Apply branch filtering
+  if (branchId) {
+    whereClause.branchId = branchId;
+  }
+
+  // Apply branch filtering for managers
+  if (currentUserRole === "MANAGER" && currentUserBranchId) {
+    whereClause.branchId = currentUserBranchId;
+  }
+
+  // Build orderBy clause
+  const orderByClause = {
+    [sortBy]: sortType,
+  };
+
+  // Get total count for pagination
+  const total = await prisma.client.count({ where: whereClause });
+
+  // Get paginated data
+  const clients = await prisma.client.findMany({
+    where: whereClause,
+    orderBy: orderByClause,
+    skip,
+    take: limit,
+    include: {
+      branch: {
+        select: {
+          id: true,
+          name: true,
+          city: true,
+        },
+      },
+      _count: {
+        select: {
+          invoices: true,
+          tasks: true,
+        },
+      },
+    },
+  });
+
+  const totalPages = Math.ceil(total / limit);
+  const hasNext = page < totalPages;
+  const hasPrev = page > 1;
+
+  return {
+    data: clients,
+    page,
+    limit,
+    total,
+    totalPages,
+    hasNext,
+    hasPrev,
+  };
+};
+
 export default {
   createClient,
   queryClients,
+  getClientsWithPagination,
   getClientById,
   updateClientById,
   deleteClientById,

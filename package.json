@@ -17,6 +17,8 @@
     "db:studio": "prisma studio",
     "create-admin": "node create-admin-user.js",
     "create-admin:ts": "npx ts-node create-admin-user.ts",
+    "seed": "node seed-database.js",
+    "seed:ts": "npx ts-node seed-database.ts",
     "prepare": "husky",
     "build": "npx rimraf build && tsc -p tsconfig.json"
   },

@@ -94,53 +94,47 @@ const createInvoice = catchAsync(async (req, res) => {
 });
 
 const getInvoices = catchAsync(async (req, res) => {
-  const filter = pick(req.query, [
-    "clientId",
-    "branchId",
-    "employeeId",
-    "status",
-    "invoiceNumber",
-    "invoiceId",
-  ]);
-  const options = pick(req.query, ["sortBy", "sortType", "limit", "page"]);
+  const {
+    page = 1,
+    limit = 10,
+    search,
+    sortBy = "createdAt",
+    sortType = "desc",
+    status,
+  } = req.query;
 
-  // Convert string values to appropriate types for filter
-  if (filter.status && typeof filter.status === "string") {
-    // Validate status if provided
-    if (
-      !Object.values(InvoiceStatus).includes(filter.status as InvoiceStatus)
-    ) {
-      throw new ApiError(
-        httpStatus.BAD_REQUEST,
-        "Invalid invoice status filter"
-      );
-    }
-  }
-
-  // Convert string values to appropriate types for options
-  const processedOptions = {
-    ...options,
-    limit: options.limit ? parseInt(options.limit as string, 10) : undefined,
-    page: options.page ? parseInt(options.page as string, 10) : undefined,
+  const paginationOptions = {
+    page: parseInt(page as string),
+    limit: parseInt(limit as string),
+    search: search as string,
+    sortBy: sortBy as string,
+    sortType: sortType as "asc" | "desc",
+    status: status as string,
   };
 
   const currentUserRole = req.user?.role;
   const currentUserBranchId = req.user?.branchId || undefined;
 
-  const result = await invoiceService.queryInvoices(
-    filter,
-    processedOptions,
+  const result = await invoiceService.getInvoicesWithPagination(
+    paginationOptions,
     currentUserRole,
     currentUserBranchId
   );
 
-  sendResponse(
-    res,
-    httpStatus.OK,
-    true,
-    { invoices: result },
-    "Invoices retrieved successfully"
-  );
+  res.status(httpStatus.OK).json({
+    success: true,
+    status: httpStatus.OK,
+    message: "Invoices retrieved successfully",
+    data: result.data,
+    pagination: {
+      page: result.page,
+      limit: result.limit,
+      total: result.total,
+      totalPages: result.totalPages,
+      hasNext: result.hasNext,
+      hasPrev: result.hasPrev,
+    },
+  });
 });
 
 const getInvoice = catchAsync(async (req, res) => {

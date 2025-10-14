@@ -108,42 +108,53 @@ const createTask = catchAsync(async (req, res) => {
 });
 
 const getTasks = catchAsync(async (req, res) => {
-  const filter = pick(req.query, [
-    "title",
-    "status",
-    "clientId",
-    "serviceId",
-    "assignedEmployeeId",
-  ]);
-  const options = pick(req.query, ["sortBy", "limit", "page"]);
+  const {
+    page = 1,
+    limit = 10,
+    search,
+    sortBy = "createdAt",
+    sortType = "desc",
+    status,
+    assignedEmployeeId,
+    branchId,
+  } = req.query;
 
-  // Add text search for title if provided
-  if (filter.title) {
-    filter.title = {
-      contains: filter.title,
-      mode: "insensitive",
-    };
-  }
+  const paginationOptions = {
+    page: parseInt(page as string),
+    limit: parseInt(limit as string),
+    search: search as string,
+    sortBy: sortBy as string,
+    sortType: sortType as "asc" | "desc",
+    status: status as string,
+    assignedEmployeeId: assignedEmployeeId as string,
+    branchId: branchId as string,
+  };
 
   const currentUserId = req.user!.id;
   const currentUserRole = req.user!.role;
   const currentUserBranchId = req.user!.branchId || undefined;
 
-  const result = await taskService.queryTasks(
-    filter,
-    options,
+  const result = await taskService.getTasksWithPagination(
+    paginationOptions,
     currentUserId,
     currentUserRole,
     currentUserBranchId
   );
 
-  sendResponse(
-    res,
-    httpStatus.OK,
-    true,
-    result,
-    "Tasks retrieved successfully"
-  );
+  res.status(httpStatus.OK).json({
+    success: true,
+    status: httpStatus.OK,
+    message: "Tasks retrieved successfully",
+    data: result.data,
+    pagination: {
+      page: result.page,
+      limit: result.limit,
+      total: result.total,
+      totalPages: result.totalPages,
+      hasNext: result.hasNext,
+      hasPrev: result.hasPrev,
+    },
+  });
 });
 
 const getTask = catchAsync(async (req, res) => {
