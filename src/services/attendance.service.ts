@@ -31,7 +31,7 @@ const checkIn = async (userId: string, notes?: string): Promise<Attendance> => {
   });
 
   if (existingAttendance && existingAttendance.checkIn) {
-    throw new ApiError(StatusCodes.BAD_REQUEST, "Already checked in today");
+    throw new ApiError(StatusCodes.BAD_REQUEST, "*Hai già timbrato oggi*");
   }
 
   const now = new Date();
@@ -120,16 +120,22 @@ const checkOut = async (
   if (!attendance) {
     throw new ApiError(
       StatusCodes.BAD_REQUEST,
-      "No check-in record found for today"
+      "*Nessun record di timbratura trovato per oggi*"
     );
   }
 
   if (!attendance.checkIn) {
-    throw new ApiError(StatusCodes.BAD_REQUEST, "Not checked in today");
+    throw new ApiError(
+      StatusCodes.BAD_REQUEST,
+      "*Non hai timbrato in entrata oggi*"
+    );
   }
 
   if (attendance.checkOut) {
-    throw new ApiError(StatusCodes.BAD_REQUEST, "Already checked out today");
+    throw new ApiError(
+      StatusCodes.BAD_REQUEST,
+      "*Hai già timbrato in uscita oggi*"
+    );
   }
 
   const now = new Date();
