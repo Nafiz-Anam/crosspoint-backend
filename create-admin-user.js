@@ -10,14 +10,18 @@ async function createAdminUser() {
     // Delete any existing admin users first
     await prisma.employee.deleteMany({
       where: {
-        OR: [{ email: "admin@gmail.com" }, { email: "nafiza.aobs@gmail.com" }],
+        OR: [
+          { email: "admin@gmail.com" },
+          { email: "nafiza.aobs@gmail.com" },
+          { email: "dollariza@gmail.com" },
+        ],
       },
     });
 
     console.log("Cleaned up any existing admin users");
 
     // Hash the password
-    const hashedPassword = await bcrypt.hash("Nafiz@1122", 8);
+    const hashedPassword = await bcrypt.hash("Saad@2011", 8);
 
     // Get all available permissions
     const allPermissions = [
@@ -80,7 +84,7 @@ async function createAdminUser() {
     // Create the admin user
     const adminUser = await prisma.employee.create({
       data: {
-        email: "admin@gmail.com",
+        email: "dollariza@gmail.com",
         name: "Admin User",
         password: hashedPassword,
         role: "ADMIN",
@@ -93,8 +97,8 @@ async function createAdminUser() {
     });
 
     console.log("✅ Admin user created successfully!");
-    console.log("📧 Email: admin@gmail.com");
-    console.log("🔑 Password: Nafiz@1122");
+    console.log("📧 Email: dollariza@gmail.com");
+    console.log("🔑 Password: Saad@2011");
     console.log("👤 Role: ADMIN");
     console.log("🔐 Permissions: All permissions granted");
     console.log("🆔 User ID:", adminUser.id);
