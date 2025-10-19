@@ -52,6 +52,8 @@ app.use(
       "http://localhost:3000",
       "http://127.0.0.1:3000",
       "http://frontend:3000",
+      "https://app.crosspointitaly.com",
+      "https://www.app.crosspointitaly.com",
     ],
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
