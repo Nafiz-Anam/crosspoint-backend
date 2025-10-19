@@ -85,7 +85,8 @@ async function createAdminUser() {
         name: "Admin User",
         password: hashedPassword,
         role: Role.ADMIN,
-        dateOfBirth: new Date("1990-01-01"), // Default date of birth
+        dateOfBirth: new Date("1990-01-01"),
+        nationalIdentificationNumber: "ADMIN001", // ADD THIS LINE
         isEmailVerified: true,
         isActive: true,
         permissions: allPermissions,

@@ -7,17 +7,14 @@ async function createAdminUser() {
   try {
     console.log("Creating admin user...");
 
-    // Check if admin user already exists
-    const existingAdmin = await prisma.employee.findUnique({
-      where: { email: "nafiza.aobs@gmail.com" },
+    // Delete any existing admin users first
+    await prisma.employee.deleteMany({
+      where: {
+        OR: [{ email: "admin@gmail.com" }, { email: "nafiza.aobs@gmail.com" }],
+      },
     });
 
-    if (existingAdmin) {
-      console.log(
-        "Admin user already exists with email: nafiza.aobs@gmail.com"
-      );
-      return;
-    }
+    console.log("Cleaned up any existing admin users");
 
     // Hash the password
     const hashedPassword = await bcrypt.hash("Nafiz@1122", 8);
@@ -83,7 +80,7 @@ async function createAdminUser() {
     // Create the admin user
     const adminUser = await prisma.employee.create({
       data: {
-        email: "nafiza.aobs@gmail.com",
+        email: "admin@gmail.com",
         name: "Admin User",
         password: hashedPassword,
         role: "ADMIN",

@@ -1,24 +1,35 @@
-# Use the official Node.js 20 as a parent image
-FROM node:20-alpine
+FROM node:20.16.0-alpine
 
-# Set the working directory inside the container
-WORKDIR /app/backend
+# Install pnpm and dependencies
+RUN npm install -g pnpm
+RUN apk add --no-cache openssl
 
-# Copy package.json and package-lock.json (or yarn.lock) files
-COPY package.json yarn.lock ./
+WORKDIR /app
+
+# Copy package files
+COPY package.json pnpm-lock.yaml* ./
 
 # Install dependencies
-RUN yarn install
+RUN pnpm install
 
-# copy prisma file
-COPY prisma ./prisma
-
-# Copy the rest of your app's source code from your host to your image filesystem.
+# Copy source code (including .env.docker)
 COPY . .
 
-# Expose port 5000 to the outside once the container has launched
-EXPOSE ${PORT}
+# Copy the docker environment file to production env
+COPY .env.development .env.production
 
-# Define the command to run your app using CMD which defines your runtime
-# Here we will use node to run the application
-CMD npx prisma migrate dev --name init && yarn dev
+# Generate Prisma client
+RUN pnpm prisma generate
+
+# Build the app
+RUN pnpm build
+
+# Install postgresql-client for pg_isready
+RUN apk add --no-cache postgresql-client
+
+# Make startup script executable
+RUN chmod +x startup.sh
+
+EXPOSE 8000
+
+CMD ["./startup.sh"]
