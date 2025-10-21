@@ -285,7 +285,7 @@ const getEmployeeByEmail = async <Key extends keyof Employee>(
 const updateEmployeeById = async <Key extends keyof Employee>(
   employeeId: string,
   updateBody: Prisma.EmployeeUpdateInput,
-  keys: Key[] = ["id", "email", "name", "role"] as Key[]
+  keys: Key[] = ["id", "email", "name", "role", "password"] as Key[]
 ): Promise<Pick<Employee, Key> | null> => {
   const employee = await getEmployeeById(employeeId, ["id", "email", "name"]);
   if (!employee) {
