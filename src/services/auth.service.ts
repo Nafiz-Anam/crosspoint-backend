@@ -31,12 +31,30 @@ const loginEmployeeWithEmailAndPassword = async (
     "createdAt",
     "updatedAt",
   ]);
-  if (
-    !employee ||
-    !(await isPasswordMatch(password, employee.password as string))
-  ) {
+  console.log("🔍 Login attempt for:", email);
+  console.log("🔍 Stored password length:", employee?.password?.length);
+  console.log(
+    "🔍 Stored password starts with:",
+    employee?.password?.substring(0, 10)
+  );
+
+  if (!employee) {
+    console.log("❌ Login failed: Employee not found");
     throw new ApiError(httpStatus.UNAUTHORIZED, "Incorrect email or password");
   }
+
+  const passwordMatch = await isPasswordMatch(
+    password,
+    employee.password as string
+  );
+  console.log("🔍 Password match result:", passwordMatch);
+
+  if (!passwordMatch) {
+    console.log("❌ Login failed: Password mismatch");
+    throw new ApiError(httpStatus.UNAUTHORIZED, "Incorrect email or password");
+  }
+
+  console.log("✅ Login successful for:", email);
 
   // Ensure user has role-based permissions (fallback if database doesn't have them)
   const rolePermissions = allRoles[employee.role] || [];
@@ -283,9 +301,24 @@ const resetPasswordWithOTP = async (
   }
 
   const encryptedPassword = await encryptPassword(newPassword);
+  console.log(
+    "🔐 Password reset - Original password length:",
+    newPassword.length
+  );
+  console.log(
+    "🔐 Password reset - Encrypted password length:",
+    encryptedPassword.length
+  );
+  console.log(
+    "🔐 Password reset - Encrypted password starts with:",
+    encryptedPassword.substring(0, 10)
+  );
+
   await employeeService.updateEmployeeById(employee.id, {
     password: encryptedPassword,
   });
+
+  console.log("✅ Password updated successfully for:", email);
 
   // Delete OTP after successful password reset
   await prisma.otp.delete({
