@@ -82,10 +82,53 @@ If you did not request a password reset, please ignore this email.`;
   await sendEmail(to, subject, text);
 };
 
+/**
+ * Send welcome email to new employee with login credentials
+ * @param {string} to
+ * @param {string} name
+ * @param {string} email
+ * @param {string} password
+ * @param {string} role
+ * @param {string} employeeId
+ * @returns {Promise}
+ */
+const sendWelcomeEmail = async (
+  to: string,
+  name: string,
+  email: string,
+  password: string,
+  role: string,
+  employeeId?: string
+) => {
+  const subject = "Welcome to Crosspoint - Your Account Details";
+  const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+  const text = `Dear ${name},
+
+Welcome to Crosspoint! Your employee account has been successfully created.
+
+Here are your login credentials:
+
+Email: ${email}
+Password: ${password}
+Role: ${role}
+${employeeId ? `Employee ID: ${employeeId}` : ""}
+
+Please log in to the system and change your password for security purposes.
+
+You can access the system at: ${frontendUrl}
+
+If you have any questions or need assistance, please contact your HR department or system administrator.
+
+Best regards,
+Crosspoint Team`;
+  await sendEmail(to, subject, text);
+};
+
 export default {
   transport,
   sendEmail,
   sendResetPasswordEmail,
   sendVerificationEmail,
   sendResetPasswordOTP,
+  sendWelcomeEmail,
 };

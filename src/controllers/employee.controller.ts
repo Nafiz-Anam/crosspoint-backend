@@ -5,6 +5,7 @@ import catchAsync from "../utils/catchAsync";
 import { employeeService } from "../services";
 import sendResponse from "../utils/responseHandler";
 import cronService from "../services/cron.service";
+import emailService from "../services/email.service";
 import { Role } from "@prisma/client";
 
 const createEmployee = catchAsync(async (req, res) => {
@@ -62,6 +63,22 @@ const createEmployee = catchAsync(async (req, res) => {
     dateOfBirth: new Date(dateOfBirth),
     isActive,
   });
+
+  // Send welcome email to the new employee
+  try {
+    await emailService.sendWelcomeEmail(
+      employee.email,
+      employee.name || "",
+      employee.email,
+      password, // Send the plain text password for initial login
+      employee.role,
+      employee.employeeId || undefined
+    );
+  } catch (emailError) {
+    // Log the error but don't fail the employee creation
+    console.error("Failed to send welcome email:", emailError);
+    // You might want to add this to a proper logger in production
+  }
 
   res.status(httpStatus.CREATED).send(employee);
 });

@@ -16,7 +16,7 @@ RUN pnpm install
 COPY . .
 
 # Copy the docker environment file to production env
-COPY .env.development .env.production
+COPY .env.production .env
 
 # Generate Prisma client
 RUN pnpm prisma generate
