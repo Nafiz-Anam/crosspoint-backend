@@ -84,6 +84,25 @@ const getClients = catchAsync(async (req, res) => {
   });
 });
 
+const getAllClients = catchAsync(async (req, res) => {
+  const { sortBy = "createdAt", sortType = "desc" } = req.query;
+
+  const options = {
+    sortBy: sortBy as string,
+    sortType: sortType as "asc" | "desc",
+  };
+
+  const clients = await clientService.getAllClientsForDropdown(options);
+
+  res.status(httpStatus.OK).json({
+    success: true,
+    status: httpStatus.OK,
+    message: "All clients retrieved successfully",
+    data: clients,
+    total: clients.length,
+  });
+});
+
 const getClient = catchAsync(async (req, res) => {
   const client = await clientService.getClientById(req.params.clientId);
   if (!client) {
@@ -126,4 +145,5 @@ export default {
   getClient,
   updateClient,
   deleteClient,
+  getAllClients,
 };

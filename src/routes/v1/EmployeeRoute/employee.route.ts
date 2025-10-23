@@ -19,6 +19,13 @@ router.use(loadUserPermissions);
 router.use(addBranchFilter);
 
 router
+  .route("/list/all")
+  .get(
+    requirePermission(Permission.READ_EMPLOYEE),
+    employeeController.getEmployeesList
+  );
+
+router
   .route("/")
   .post(
     requirePermission(Permission.CREATE_EMPLOYEE),

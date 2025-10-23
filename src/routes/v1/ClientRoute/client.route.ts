@@ -18,6 +18,13 @@ router.use(loadUserPermissions);
 router.use(addBranchFilter);
 
 router
+  .route("/list/all")
+  .get(
+    requirePermission(Permission.READ_CLIENT),
+    clientController.getAllClients
+  );
+
+router
   .route("/")
   .post(
     requirePermission(Permission.CREATE_CLIENT),

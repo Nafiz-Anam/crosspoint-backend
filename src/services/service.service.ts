@@ -230,6 +230,49 @@ const getServicesWithPagination = async (options: {
   };
 };
 
+const getAllServicesForDropdown = async (
+  options: {
+    search?: string;
+    sortBy?: string;
+    sortType?: "asc" | "desc";
+    category?: string;
+  } = {}
+): Promise<Service[]> => {
+  const { search, sortBy = "name", sortType = "asc", category } = options;
+
+  // Build filter object
+  let filter: any = {};
+
+  if (search) {
+    filter.OR = [
+      { name: { contains: search, mode: "insensitive" as const } },
+      { category: { contains: search, mode: "insensitive" as const } },
+      { serviceId: { contains: search, mode: "insensitive" as const } },
+    ];
+  }
+
+  // Apply category filtering
+  if (category) {
+    filter.category = category;
+  }
+
+  const services = await prisma.service.findMany({
+    where: filter,
+    // No skip/take for fetching all records
+    orderBy: { [sortBy]: sortType },
+    include: {
+      _count: {
+        select: {
+          invoiceItems: true,
+          tasks: true,
+        },
+      },
+    },
+  });
+
+  return services;
+};
+
 export default {
   createService,
   queryServices,
@@ -237,4 +280,5 @@ export default {
   getServiceById,
   updateServiceById,
   deleteServiceById,
+  getAllServicesForDropdown,
 };

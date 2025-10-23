@@ -93,10 +93,32 @@ const deleteService = catchAsync(async (req, res) => {
   sendResponse(res, httpStatus.OK, true, null, "Service deleted successfully");
 });
 
+const getAllServices = catchAsync(async (req, res) => {
+  const { search, sortBy = "name", sortType = "asc", category } = req.query;
+
+  const options = {
+    search: search as string,
+    sortBy: sortBy as string,
+    sortType: sortType as "asc" | "desc",
+    category: category as string,
+  };
+
+  const services = await serviceService.getAllServicesForDropdown(options);
+
+  res.status(httpStatus.OK).json({
+    success: true,
+    status: httpStatus.OK,
+    message: "All services retrieved successfully",
+    data: services,
+    total: services.length,
+  });
+});
+
 export default {
   createService,
   getServices,
   getService,
   updateService,
   deleteService,
+  getAllServices,
 };

@@ -339,6 +339,36 @@ const getClientsWithPagination = async (
   };
 };
 
+const getAllClientsForDropdown = async (
+  options: {
+    sortBy?: string;
+    sortType?: "asc" | "desc";
+  } = {}
+): Promise<Client[]> => {
+  const { sortBy = "createdAt", sortType = "desc" } = options;
+
+  const clients = await prisma.client.findMany({
+    orderBy: { [sortBy]: sortType },
+    include: {
+      branch: {
+        select: {
+          id: true,
+          name: true,
+          city: true,
+        },
+      },
+      _count: {
+        select: {
+          invoices: true,
+          tasks: true,
+        },
+      },
+    },
+  });
+
+  return clients;
+};
+
 export default {
   createClient,
   queryClients,
@@ -346,4 +376,5 @@ export default {
   getClientById,
   updateClientById,
   deleteClientById,
+  getAllClientsForDropdown,
 };
