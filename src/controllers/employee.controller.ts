@@ -220,7 +220,13 @@ const getEmployeesList = catchAsync(async (req, res) => {
   };
 
   const result = await employeeService.queryEmployees(filter, processedOptions);
-  res.send(result);
+
+  res.status(httpStatus.OK).json({
+    success: true,
+    status: httpStatus.OK,
+    message: "Employees retrieved successfully",
+    data: result,
+  });
 });
 
 const checkEmployeeBirthdays = catchAsync(async (req, res) => {
