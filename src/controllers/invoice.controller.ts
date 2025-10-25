@@ -426,6 +426,46 @@ const createInvoiceFromTask = catchAsync(async (req, res) => {
   );
 });
 
+const exportInvoices = catchAsync(async (req, res) => {
+  const {
+    search,
+    sortBy = "createdAt",
+    sortType = "desc",
+    status,
+    branchId,
+  } = req.query;
+
+  const exportOptions = {
+    search: search as string,
+    sortBy: sortBy as string,
+    sortType: sortType as "asc" | "desc",
+    status: status as string,
+    branchId: branchId as string,
+  };
+
+  const currentUserRole = req.user?.role;
+  const currentUserBranchId = req.user?.branchId || undefined;
+
+  const excelBuffer = await invoiceService.generateInvoiceReport(
+    exportOptions,
+    currentUserRole,
+    currentUserBranchId
+  );
+
+  // Set response headers for Excel file download
+  res.setHeader(
+    "Content-Type",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+  );
+  res.setHeader(
+    "Content-Disposition",
+    "attachment; filename=invoice-report.xlsx"
+  );
+  res.setHeader("Content-Length", excelBuffer.length);
+
+  res.send(excelBuffer);
+});
+
 export default {
   createInvoice,
   createInvoiceFromTask,
@@ -437,4 +477,5 @@ export default {
   generateInvoiceNumber,
   getInvoiceStats,
   checkOverdueInvoices,
+  exportInvoices,
 };

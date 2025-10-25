@@ -86,6 +86,13 @@ router
     invoiceController.checkOverdueInvoices
   );
 
+router
+  .route("/export")
+  .get(
+    requirePermission(Permission.READ_INVOICE),
+    invoiceController.exportInvoices
+  );
+
 export default router;
 
 /**

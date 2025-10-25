@@ -799,6 +799,236 @@ const getInvoicesWithPagination = async (
   };
 };
 
+/**
+ * Generate invoice report in Excel format
+ * @param {Object} options - Filter options
+ * @param {string} [currentUserRole] - Current user's role for filtering
+ * @param {string} [currentUserBranchId] - Current user's branch ID for filtering
+ * @returns {Promise<Buffer>}
+ */
+const generateInvoiceReport = async (
+  options: {
+    search?: string;
+    sortBy: string;
+    sortType: "asc" | "desc";
+    status?: string;
+    branchId?: string;
+  },
+  currentUserRole?: string,
+  currentUserBranchId?: string
+): Promise<Buffer> => {
+  const XLSX = require("xlsx");
+
+  const { search, sortBy, sortType, status, branchId } = options;
+
+  // Build where clause for search
+  let whereClause: any = {};
+
+  if (search) {
+    whereClause.OR = [
+      { invoiceNumber: { contains: search, mode: "insensitive" as const } },
+      { client: { name: { contains: search, mode: "insensitive" as const } } },
+      { client: { email: { contains: search, mode: "insensitive" as const } } },
+      {
+        employee: { name: { contains: search, mode: "insensitive" as const } },
+      },
+      { branch: { name: { contains: search, mode: "insensitive" as const } } },
+    ];
+  }
+
+  // Apply status filtering
+  if (status) {
+    whereClause.status = status;
+  }
+
+  // Apply branch filtering
+  if (branchId) {
+    whereClause.branchId = branchId;
+  }
+
+  // Apply branch filtering for managers
+  if (currentUserRole === "MANAGER" && currentUserBranchId) {
+    whereClause.branchId = currentUserBranchId;
+  }
+
+  // Build orderBy clause
+  const orderByClause = {
+    [sortBy]: sortType,
+  };
+
+  // Get all invoices (no pagination for export)
+  const invoices = await prisma.invoice.findMany({
+    where: whereClause,
+    include: {
+      client: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      },
+      branch: {
+        select: {
+          id: true,
+          name: true,
+          city: true,
+        },
+      },
+      employee: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      },
+      items: {
+        include: {
+          service: {
+            select: {
+              id: true,
+              name: true,
+              category: true,
+            },
+          },
+        },
+      },
+    },
+    orderBy: orderByClause,
+  });
+
+  // Calculate summary statistics
+  const totalInvoices = invoices.length;
+  const totalAmount = invoices.reduce((sum, inv) => sum + inv.totalAmount, 0);
+  const subTotalAmount = invoices.reduce(
+    (sum, inv) => sum + inv.subTotalAmount,
+    0
+  );
+  const taxAmount = invoices.reduce((sum, inv) => sum + inv.taxAmount, 0);
+  const discountAmount = invoices.reduce(
+    (sum, inv) => sum + inv.discountAmount,
+    0
+  );
+
+  const paidInvoices = invoices.filter((inv) => inv.status === "PAID").length;
+  const unpaidInvoices = invoices.filter(
+    (inv) => inv.status === "UNPAID"
+  ).length;
+  const overdueInvoices = invoices.filter(
+    (inv) => inv.status === "OVERDUE"
+  ).length;
+  const cancelledInvoices = invoices.filter(
+    (inv) => inv.status === "CANCELLED"
+  ).length;
+
+  const paidAmount = invoices
+    .filter((inv) => inv.status === "PAID")
+    .reduce((sum, inv) => sum + inv.totalAmount, 0);
+  const unpaidAmount = invoices
+    .filter((inv) => inv.status === "UNPAID")
+    .reduce((sum, inv) => sum + inv.totalAmount, 0);
+
+  // Prepare Excel data
+  const excelData = [];
+
+  // Add report header
+  excelData.push(["INVOICE REVENUE REPORT"]);
+  excelData.push([]);
+  excelData.push(["Report Generated:", new Date().toLocaleString()]);
+  excelData.push([]);
+
+  // Add summary statistics
+  excelData.push(["SUMMARY STATISTICS"]);
+  excelData.push([]);
+  excelData.push(["Total Invoices:", totalInvoices]);
+  excelData.push(["Total Revenue:", `$${totalAmount.toFixed(2)}`]);
+  excelData.push(["Subtotal Amount:", `$${subTotalAmount.toFixed(2)}`]);
+  excelData.push(["Total Tax:", `$${taxAmount.toFixed(2)}`]);
+  excelData.push(["Total Discount:", `$${discountAmount.toFixed(2)}`]);
+  excelData.push([]);
+
+  // Add status breakdown
+  excelData.push(["STATUS BREAKDOWN"]);
+  excelData.push([]);
+  excelData.push(["Paid Invoices:", paidInvoices, `$${paidAmount.toFixed(2)}`]);
+  excelData.push([
+    "Unpaid Invoices:",
+    unpaidInvoices,
+    `$${unpaidAmount.toFixed(2)}`,
+  ]);
+  excelData.push(["Overdue Invoices:", overdueInvoices]);
+  excelData.push(["Cancelled Invoices:", cancelledInvoices]);
+  excelData.push([]);
+
+  // Add invoice details header
+  excelData.push([
+    "Invoice #",
+    "Client",
+    "Branch",
+    "Employee",
+    "Status",
+    "Issue Date",
+    "Due Date",
+    "Subtotal",
+    "Tax",
+    "Discount",
+    "Total Amount",
+    "Payment Method",
+    "Notes",
+  ]);
+
+  // Add invoice details
+  invoices.forEach((invoice) => {
+    excelData.push([
+      invoice.invoiceNumber,
+      invoice.client.name,
+      `${invoice.branch.name} (${invoice.branch.city})`,
+      invoice.employee.name,
+      invoice.status,
+      new Date(invoice.issuedDate).toLocaleDateString(),
+      new Date(invoice.dueDate).toLocaleDateString(),
+      `$${invoice.subTotalAmount.toFixed(2)}`,
+      `$${invoice.taxAmount.toFixed(2)}`,
+      `$${invoice.discountAmount.toFixed(2)}`,
+      `$${invoice.totalAmount.toFixed(2)}`,
+      invoice.paymentMethod || "N/A",
+      invoice.notes || "",
+    ]);
+  });
+
+  // Create workbook and worksheet
+  const workbook = XLSX.utils.book_new();
+  const worksheet = XLSX.utils.aoa_to_sheet(excelData);
+
+  // Set column widths
+  const columnWidths = [
+    { wch: 15 }, // Invoice #
+    { wch: 20 }, // Client
+    { wch: 25 }, // Branch
+    { wch: 20 }, // Employee
+    { wch: 12 }, // Status
+    { wch: 12 }, // Issue Date
+    { wch: 12 }, // Due Date
+    { wch: 12 }, // Subtotal
+    { wch: 12 }, // Tax
+    { wch: 12 }, // Discount
+    { wch: 12 }, // Total Amount
+    { wch: 15 }, // Payment Method
+    { wch: 30 }, // Notes
+  ];
+  worksheet["!cols"] = columnWidths;
+
+  // Add worksheet to workbook
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Invoice Report");
+
+  // Generate Excel file buffer
+  const excelBuffer = XLSX.write(workbook, {
+    type: "buffer",
+    bookType: "xlsx",
+  });
+
+  return excelBuffer;
+};
+
 export default {
   createInvoice,
   createInvoiceFromTask,
@@ -812,4 +1042,5 @@ export default {
   generateInvoiceNumber,
   calculateItemTotal,
   calculateInvoiceTotals,
+  generateInvoiceReport,
 };

@@ -38,6 +38,7 @@ const generateToken = (
  * @param {Moment} expires
  * @param {string} type
  * @param {boolean} [blacklisted]
+ * @param {Object} [sessionData] - Session tracking data
  * @returns {Promise<Token>}
  */
 const saveToken = async (
@@ -45,15 +46,25 @@ const saveToken = async (
   employeeId: string,
   expires: Moment,
   type: TokenType,
-  blacklisted = false
+  blacklisted = false,
+  sessionData?: {
+    sessionId?: string;
+    deviceInfo?: string;
+    ipAddress?: string;
+    userAgent?: string;
+  }
 ): Promise<Token> => {
-  const createdToken = prisma.token.create({
+  const createdToken = await prisma.token.create({
     data: {
       token,
       employeeId: employeeId,
       expires: expires.toDate(),
       type,
       blacklisted,
+      sessionId: sessionData?.sessionId,
+      deviceInfo: sessionData?.deviceInfo,
+      ipAddress: sessionData?.ipAddress,
+      userAgent: sessionData?.userAgent,
     },
   });
   return createdToken;
@@ -78,6 +89,17 @@ const verifyToken = async (token: string, type: TokenType): Promise<Token> => {
   const employeeId = payload.sub;
   const tokenData = await prisma.token.findFirst({
     where: { token, type, employeeId, blacklisted: false },
+    include: {
+      employee: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          branchId: true,
+        },
+      },
+    },
   });
   if (!tokenData) {
     throw new Error("Token not found");
@@ -88,9 +110,17 @@ const verifyToken = async (token: string, type: TokenType): Promise<Token> => {
 /**
  * Generate auth tokens
  * @param {Employee} employee
+ * @param {Object} [sessionData] - Session tracking data
  * @returns {Promise<AuthTokensResponse>}
  */
-const generateAuthTokens = async (employee: { id: string }): Promise<AuthTokensResponse> => {
+const generateAuthTokens = async (
+  employee: { id: string },
+  sessionData?: {
+    deviceInfo?: string;
+    ipAddress?: string;
+    userAgent?: string;
+  }
+): Promise<AuthTokensResponse> => {
   const accessTokenExpires = moment().add(
     config.jwt.accessExpirationMinutes,
     "minutes"
@@ -110,11 +140,22 @@ const generateAuthTokens = async (employee: { id: string }): Promise<AuthTokensR
     refreshTokenExpires,
     TokenType.REFRESH
   );
+
+  // Generate session ID for tracking
+  const sessionId = generateSessionId();
+
   await saveToken(
     refreshToken,
     employee.id,
     refreshTokenExpires,
-    TokenType.REFRESH
+    TokenType.REFRESH,
+    false,
+    {
+      sessionId,
+      deviceInfo: sessionData?.deviceInfo,
+      ipAddress: sessionData?.ipAddress,
+      userAgent: sessionData?.userAgent,
+    }
   );
 
   return {
@@ -126,6 +167,7 @@ const generateAuthTokens = async (employee: { id: string }): Promise<AuthTokensR
       token: refreshToken,
       expires: refreshTokenExpires.toDate(),
     },
+    sessionId,
   };
 };
 
@@ -137,7 +179,10 @@ const generateAuthTokens = async (employee: { id: string }): Promise<AuthTokensR
 const generateResetPasswordToken = async (email: string): Promise<string> => {
   const employee = await userService.getEmployeeByEmail(email);
   if (!employee) {
-    throw new ApiError(httpStatus.NOT_FOUND, "No employees found with this email");
+    throw new ApiError(
+      httpStatus.NOT_FOUND,
+      "No employees found with this email"
+    );
   }
   const expires = moment().add(
     config.jwt.resetPasswordExpirationMinutes,
@@ -174,8 +219,125 @@ const generateVerifyEmailToken = async (employee: {
     expires,
     TokenType.VERIFY_EMAIL
   );
-  await saveToken(verifyEmailToken, employee.id, expires, TokenType.VERIFY_EMAIL);
+  await saveToken(
+    verifyEmailToken,
+    employee.id,
+    expires,
+    TokenType.VERIFY_EMAIL
+  );
   return verifyEmailToken;
+};
+
+/**
+ * Generate a unique session ID
+ * @returns {string}
+ */
+const generateSessionId = (): string => {
+  return `sess_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+};
+
+/**
+ * Invalidate all active sessions for a user
+ * @param {string} employeeId
+ * @returns {Promise<void>}
+ */
+const invalidateAllUserSessions = async (employeeId: string): Promise<void> => {
+  await prisma.token.updateMany({
+    where: {
+      employeeId,
+      type: TokenType.REFRESH,
+      isActive: true,
+    },
+    data: {
+      isActive: false,
+      blacklisted: true,
+    },
+  });
+};
+
+/**
+ * Check if user has any active sessions
+ * @param {string} employeeId
+ * @returns {Promise<boolean>}
+ */
+const hasActiveSessions = async (employeeId: string): Promise<boolean> => {
+  const activeSession = await prisma.token.findFirst({
+    where: {
+      employeeId,
+      type: TokenType.REFRESH,
+      isActive: true,
+      blacklisted: false,
+      expires: {
+        gt: new Date(),
+      },
+    },
+  });
+  return !!activeSession;
+};
+
+/**
+ * Get active session info for a user
+ * @param {string} employeeId
+ * @returns {Promise<Array>}
+ */
+const getActiveSessions = async (employeeId: string) => {
+  return await prisma.token.findMany({
+    where: {
+      employeeId,
+      type: TokenType.REFRESH,
+      isActive: true,
+      blacklisted: false,
+      expires: {
+        gt: new Date(),
+      },
+    },
+    select: {
+      id: true,
+      sessionId: true,
+      deviceInfo: true,
+      ipAddress: true,
+      userAgent: true,
+      createdAt: true,
+      expires: true,
+    },
+  });
+};
+
+/**
+ * Invalidate a specific session
+ * @param {string} sessionId
+ * @returns {Promise<void>}
+ */
+const invalidateSession = async (sessionId: string): Promise<void> => {
+  await prisma.token.updateMany({
+    where: {
+      sessionId,
+      type: TokenType.REFRESH,
+    },
+    data: {
+      isActive: false,
+      blacklisted: true,
+    },
+  });
+};
+
+/**
+ * Update session activity
+ * @param {string} sessionId
+ * @returns {Promise<void>}
+ */
+const updateSessionActivity = async (sessionId: string): Promise<void> => {
+  await prisma.token.updateMany({
+    where: {
+      sessionId,
+      type: TokenType.REFRESH,
+      isActive: true,
+    },
+    data: {
+      // Update last activity timestamp by updating the token
+      updatedAt: new Date(),
+    },
+  });
 };
 
 export default {
@@ -185,4 +347,10 @@ export default {
   generateAuthTokens,
   generateResetPasswordToken,
   generateVerifyEmailToken,
+  generateSessionId,
+  invalidateAllUserSessions,
+  hasActiveSessions,
+  getActiveSessions,
+  invalidateSession,
+  updateSessionActivity,
 };

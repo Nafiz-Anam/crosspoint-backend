@@ -91,20 +91,53 @@ const logout = async (refreshToken: string): Promise<void> => {
 /**
  * Refresh auth tokens
  * @param {string} refreshToken
+ * @param {Object} [sessionData] - Session tracking data for the refresh request
  * @returns {Promise<AuthTokensResponse>}
  */
 const refreshAuth = async (
-  refreshToken: string
+  refreshToken: string,
+  sessionData?: {
+    deviceInfo?: string;
+    ipAddress?: string;
+    userAgent?: string;
+  }
 ): Promise<AuthTokensResponse> => {
   try {
     const refreshTokenData = await tokenService.verifyToken(
       refreshToken,
       TokenType.REFRESH
     );
-    const { employeeId } = refreshTokenData;
+    const {
+      employeeId,
+      sessionId: oldSessionId,
+      deviceInfo,
+      ipAddress,
+      userAgent,
+    } = refreshTokenData;
+
+    // Check if the session is still active
+    if (!refreshTokenData.isActive) {
+      throw new ApiError(
+        httpStatus.UNAUTHORIZED,
+        "Session has been terminated. Please login again."
+      );
+    }
+
+    // Delete the old refresh token
     await prisma.token.delete({ where: { id: refreshTokenData.id } });
-    return tokenService.generateAuthTokens({ id: employeeId });
+
+    // Generate new tokens with preserved session data
+    const sessionInfo = {
+      deviceInfo: sessionData?.deviceInfo || deviceInfo,
+      ipAddress: sessionData?.ipAddress || ipAddress,
+      userAgent: sessionData?.userAgent || userAgent,
+    };
+
+    return tokenService.generateAuthTokens({ id: employeeId }, sessionInfo);
   } catch (error) {
+    if (error instanceof ApiError) {
+      throw error;
+    }
     throw new ApiError(httpStatus.UNAUTHORIZED, "Please authenticate");
   }
 };

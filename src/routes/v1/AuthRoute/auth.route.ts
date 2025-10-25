@@ -48,6 +48,11 @@ router.post(
   authController.resetPasswordWithOTP
 );
 
+// Session management routes
+router.get("/sessions", auth(), authController.getActiveSessions);
+router.delete("/sessions/:sessionId", auth(), authController.terminateSession);
+router.delete("/sessions", auth(), authController.terminateAllSessions);
+
 /**
  * @openapi
  * /auth/register:

@@ -51,6 +51,12 @@ declare global {
         branchId?: string;
         role: Role;
       }; // Branch filtering information for managers
+      sessionInfo?: {
+        sessionId?: string;
+        deviceInfo?: string;
+        ipAddress?: string;
+        userAgent?: string;
+      }; // Session information for tracking
     }
   }
 }

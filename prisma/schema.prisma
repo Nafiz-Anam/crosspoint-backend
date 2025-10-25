@@ -180,6 +180,12 @@ model Token {
   createdAt   DateTime  @default(now())
   employee    Employee  @relation(fields: [employeeId], references: [id])
   employeeId  String
+  // Session tracking fields
+  sessionId   String?   @unique // Unique session identifier
+  deviceInfo  String? // Device/browser information
+  ipAddress   String? // IP address of the session
+  userAgent   String? // User agent string
+  isActive    Boolean   @default(true) // Whether this session is currently active
 }
 
 model BankAccount {
@@ -338,4 +344,20 @@ enum TaskStatus {
   COMPLETED
   CANCELLED
   ON_HOLD
+}
+
+model SecurityEvent {
+  id         String   @id @default(uuid())
+  type       String // LOGIN_ATTEMPT, SUSPICIOUS_IP, MULTIPLE_DEVICES, etc.
+  userId     String
+  sessionId  String?
+  ipAddress  String
+  userAgent  String
+  deviceInfo String
+  severity   String // LOW, MEDIUM, HIGH, CRITICAL
+  details    String
+  metadata   String? // JSON string for additional data
+  createdAt  DateTime @default(now())
+
+  @@map("security_events")
 }
