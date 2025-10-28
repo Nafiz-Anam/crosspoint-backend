@@ -9,6 +9,11 @@ export const bankAccountValidation = {
         "string.max": "Bank name cannot exceed 100 characters",
         "any.required": "Bank name is required",
       }),
+      accountName: Joi.string().required().max(100).messages({
+        "string.empty": "Account name is required",
+        "string.max": "Account name cannot exceed 100 characters",
+        "any.required": "Account name is required",
+      }),
       accountNumber: Joi.string().required().max(50).messages({
         "string.empty": "Account number is required",
         "string.max": "Account number cannot exceed 50 characters",
@@ -20,11 +25,6 @@ export const bankAccountValidation = {
       }),
       bankSwiftCode: Joi.string().optional().allow("").max(11).messages({
         "string.max": "Bank SWIFT code cannot exceed 11 characters",
-      }),
-      accountName: Joi.string().required().max(100).messages({
-        "string.empty": "Account name is required",
-        "string.max": "Account name cannot exceed 100 characters",
-        "any.required": "Account name is required",
       }),
       isActive: Joi.boolean().optional().messages({
         "boolean.base": "isActive must be a boolean",
@@ -93,6 +93,11 @@ export const bankAccountValidation = {
         "string.max": "Bank name cannot exceed 100 characters",
         "any.required": "Bank name is required",
       }),
+      accountName: Joi.string().required().max(100).messages({
+        "string.empty": "Account name is required",
+        "string.max": "Account name cannot exceed 100 characters",
+        "any.required": "Account name is required",
+      }),
       accountNumber: Joi.string().required().max(50).messages({
         "string.empty": "Account number is required",
         "string.max": "Account number cannot exceed 50 characters",
@@ -104,11 +109,6 @@ export const bankAccountValidation = {
       }),
       bankSwiftCode: Joi.string().optional().allow("").max(11).messages({
         "string.max": "Bank SWIFT code cannot exceed 11 characters",
-      }),
-      accountName: Joi.string().required().max(100).messages({
-        "string.empty": "Account name is required",
-        "string.max": "Account name cannot exceed 100 characters",
-        "any.required": "Account name is required",
       }),
       isActive: Joi.boolean().optional().messages({
         "boolean.base": "isActive must be a boolean",

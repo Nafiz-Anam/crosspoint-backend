@@ -8,24 +8,24 @@ import sendResponse from "../utils/responseHandler";
 const createBankAccount = catchAsync(async (req, res) => {
   const {
     bankName,
-    bankCountry,
+    accountNumber,
+    accountName,
     bankIban,
     bankSwiftCode,
-    accountName,
     isActive,
   } = req.body;
 
   // Validate required fields
-  if (!bankName || !accountName) {
+  if (!bankName || !accountName || !accountNumber) {
     throw new ApiError(
       httpStatus.BAD_REQUEST,
-      "Missing required fields: bankName and accountName"
+      "Missing required fields: bankName, accountName and accountNumber"
     );
   }
 
   const bankAccount = await bankAccountService.createBankAccount({
     bankName,
-    bankCountry: bankCountry || undefined,
+    accountNumber,
     bankIban: bankIban || undefined,
     bankSwiftCode,
     accountName,

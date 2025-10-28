@@ -101,6 +101,7 @@ const getInvoices = catchAsync(async (req, res) => {
     sortBy = "createdAt",
     sortType = "desc",
     status,
+    branchId,
   } = req.query;
 
   const paginationOptions = {
@@ -110,6 +111,7 @@ const getInvoices = catchAsync(async (req, res) => {
     sortBy: sortBy as string,
     sortType: sortType as "asc" | "desc",
     status: status as string,
+    branchId: branchId as string,
   };
 
   const currentUserRole = req.user?.role;
@@ -426,6 +428,57 @@ const createInvoiceFromTask = catchAsync(async (req, res) => {
   );
 });
 
+const exportRevenueReport = catchAsync(async (req, res) => {
+  const {
+    branchId,
+    clientId,
+    employeeId,
+    status,
+    startDate,
+    endDate,
+    format = "excel",
+  } = req.query;
+
+  const currentUserRole = req.user?.role;
+  const currentUserBranchId = req.user?.branchId || undefined;
+
+  // Get revenue report data
+  const reportData = await invoiceService.getRevenueReportData(
+    {
+      branchId: branchId as string,
+      clientId: clientId as string,
+      employeeId: employeeId as string,
+      status: status as InvoiceStatus,
+      startDate: startDate ? new Date(startDate as string) : undefined,
+      endDate: endDate ? new Date(endDate as string) : undefined,
+    },
+    currentUserRole,
+    currentUserBranchId
+  );
+
+  // Generate Excel file
+  const excelBuffer = await invoiceService.generateRevenueReportExcel(
+    reportData,
+    format as string
+  );
+
+  // Set response headers for file download
+  const filename = `revenue-report-${new Date().toISOString().split("T")[0]}.${
+    format === "excel" ? "xlsx" : "csv"
+  }`;
+
+  res.setHeader(
+    "Content-Type",
+    format === "excel"
+      ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      : "text/csv"
+  );
+  res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+  res.setHeader("Content-Length", excelBuffer.length);
+
+  res.send(excelBuffer);
+});
+
 export default {
   createInvoice,
   createInvoiceFromTask,
@@ -437,4 +490,5 @@ export default {
   generateInvoiceNumber,
   getInvoiceStats,
   checkOverdueInvoices,
+  exportRevenueReport,
 };

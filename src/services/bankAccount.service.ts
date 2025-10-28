@@ -6,6 +6,7 @@ import ApiError from "../utils/ApiError";
 export interface BankAccountCreateData {
   bankName: string;
   bankCountry?: string;
+  accountNumber: string;
   bankIban?: string;
   bankSwiftCode?: string;
   accountName: string;
@@ -15,6 +16,7 @@ export interface BankAccountCreateData {
 export interface BankAccountUpdateData {
   bankName?: string;
   bankCountry?: string;
+  accountNumber?: string;
   bankIban?: string;
   bankSwiftCode?: string;
   accountName?: string;
@@ -42,7 +44,8 @@ const createBankAccount = async (
   const bankAccountData = {
     bankName: data.bankName,
     bankCountry: data.bankCountry || "Unknown",
-    bankIban: data.bankIban || `TEMP-${Date.now()}`, // Generate temporary IBAN if not provided
+    accountNumber: data.accountNumber,
+    bankIban: data.bankIban || null,
     bankSwiftCode: data.bankSwiftCode || null,
     accountName: data.accountName,
     isActive: data.isActive !== undefined ? data.isActive : true,

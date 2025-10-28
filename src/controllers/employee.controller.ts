@@ -13,6 +13,7 @@ const createEmployee = catchAsync(async (req, res) => {
     email,
     password,
     name,
+    phone,
     nationalIdentificationNumber,
     role,
     branchId,
@@ -57,6 +58,7 @@ const createEmployee = catchAsync(async (req, res) => {
     email,
     password,
     name,
+    phone,
     nationalIdentificationNumber,
     role: targetRole,
     branchId,
@@ -92,6 +94,7 @@ const getEmployees = catchAsync(async (req, res) => {
     sortType = "desc",
     role,
     isActive,
+    branchId,
   } = req.query;
 
   const paginationOptions = {
@@ -102,6 +105,7 @@ const getEmployees = catchAsync(async (req, res) => {
     sortType: sortType as "asc" | "desc",
     role: role as string,
     isActive: isActive as string,
+    branchId: branchId as string,
   };
 
   // Exclude the currently logged-in employee and all admin users from the results

@@ -702,11 +702,12 @@ const getInvoicesWithPagination = async (
     sortBy: string;
     sortType: "asc" | "desc";
     status?: string;
+    branchId?: string;
   },
   currentUserRole?: string,
   currentUserBranchId?: string
 ) => {
-  const { page, limit, search, sortBy, sortType, status } = options;
+  const { page, limit, search, sortBy, sortType, status, branchId } = options;
   const skip = (page - 1) * limit;
 
   // Build where clause for search
@@ -729,8 +730,10 @@ const getInvoicesWithPagination = async (
     whereClause.status = status;
   }
 
-  // Apply branch filtering for managers
-  if (currentUserRole === "MANAGER" && currentUserBranchId) {
+  // Apply branch filtering
+  if (branchId) {
+    whereClause.branchId = branchId;
+  } else if (currentUserRole === "MANAGER" && currentUserBranchId) {
     whereClause.branchId = currentUserBranchId;
   }
 
@@ -799,6 +802,214 @@ const getInvoicesWithPagination = async (
   };
 };
 
+// Get comprehensive revenue report data
+const getRevenueReportData = async (
+  filters: {
+    branchId?: string;
+    clientId?: string;
+    employeeId?: string;
+    status?: InvoiceStatus;
+    startDate?: Date;
+    endDate?: Date;
+  },
+  currentUserRole?: string,
+  currentUserBranchId?: string
+) => {
+  // Build where clause
+  let whereClause: any = {};
+
+  // Apply branch filtering for managers
+  if (currentUserRole === "MANAGER" && currentUserBranchId) {
+    whereClause.branchId = currentUserBranchId;
+  } else if (filters.branchId) {
+    whereClause.branchId = filters.branchId;
+  }
+
+  if (filters.clientId) {
+    whereClause.clientId = filters.clientId;
+  }
+
+  if (filters.employeeId) {
+    whereClause.employeeId = filters.employeeId;
+  }
+
+  if (filters.status) {
+    whereClause.status = filters.status;
+  }
+
+  if (filters.startDate || filters.endDate) {
+    whereClause.issuedDate = {};
+    if (filters.startDate) {
+      whereClause.issuedDate.gte = filters.startDate;
+    }
+    if (filters.endDate) {
+      whereClause.issuedDate.lte = filters.endDate;
+    }
+  }
+
+  // Get invoices with all related data
+  const invoices = await prisma.invoice.findMany({
+    where: whereClause,
+    include: {
+      client: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phone: true,
+        },
+      },
+      branch: {
+        select: {
+          id: true,
+          name: true,
+          city: true,
+        },
+      },
+      employee: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      },
+      items: {
+        include: {
+          service: {
+            select: {
+              id: true,
+              name: true,
+              category: true,
+            },
+          },
+        },
+      },
+    },
+    orderBy: { issuedDate: "desc" },
+  });
+
+  // Calculate summary statistics
+  const summary = {
+    totalInvoices: invoices.length,
+    totalAmount: invoices.reduce(
+      (sum, inv) => sum + Number(inv.totalAmount),
+      0
+    ),
+    subTotalAmount: invoices.reduce(
+      (sum, inv) => sum + Number(inv.subTotalAmount),
+      0
+    ),
+    taxAmount: invoices.reduce((sum, inv) => sum + Number(inv.taxAmount), 0),
+    discountAmount: invoices.reduce(
+      (sum, inv) => sum + Number(inv.discountAmount),
+      0
+    ),
+    paidAmount: invoices
+      .filter((inv) => inv.status === "PAID")
+      .reduce((sum, inv) => sum + Number(inv.totalAmount), 0),
+    unpaidAmount: invoices
+      .filter((inv) => inv.status === "UNPAID")
+      .reduce((sum, inv) => sum + Number(inv.totalAmount), 0),
+    overdueAmount: invoices
+      .filter((inv) => inv.status === "OVERDUE")
+      .reduce((sum, inv) => sum + Number(inv.totalAmount), 0),
+    statusBreakdown: {
+      PAID: invoices.filter((inv) => inv.status === "PAID").length,
+      UNPAID: invoices.filter((inv) => inv.status === "UNPAID").length,
+      OVERDUE: invoices.filter((inv) => inv.status === "OVERDUE").length,
+      CANCELLED: invoices.filter((inv) => inv.status === "CANCELLED").length,
+    },
+  };
+
+  return {
+    invoices,
+    summary,
+    filters,
+    generatedAt: new Date(),
+  };
+};
+
+// Generate Excel report
+const generateRevenueReportExcel = async (reportData: any, format: string) => {
+  const XLSX = require("xlsx");
+
+  // Create workbook
+  const workbook = XLSX.utils.book_new();
+
+  // Summary sheet
+  const summaryData = [
+    ["Revenue Report Summary"],
+    [""],
+    ["Generated At:", reportData.generatedAt.toLocaleString()],
+    [""],
+    ["Total Invoices:", reportData.summary.totalInvoices],
+    ["Total Amount:", `€${reportData.summary.totalAmount.toFixed(2)}`],
+    ["Subtotal Amount:", `€${reportData.summary.subTotalAmount.toFixed(2)}`],
+    ["Tax Amount:", `€${reportData.summary.taxAmount.toFixed(2)}`],
+    ["Discount Amount:", `€${reportData.summary.discountAmount.toFixed(2)}`],
+    [""],
+    ["Status Breakdown:"],
+    ["Paid Amount:", `€${reportData.summary.paidAmount.toFixed(2)}`],
+    ["Unpaid Amount:", `€${reportData.summary.unpaidAmount.toFixed(2)}`],
+    ["Overdue Amount:", `€${reportData.summary.overdueAmount.toFixed(2)}`],
+    [""],
+    ["Invoice Count by Status:"],
+    ["Paid:", reportData.summary.statusBreakdown.PAID],
+    ["Unpaid:", reportData.summary.statusBreakdown.UNPAID],
+    ["Overdue:", reportData.summary.statusBreakdown.OVERDUE],
+    ["Cancelled:", reportData.summary.statusBreakdown.CANCELLED],
+  ];
+
+  const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
+  XLSX.utils.book_append_sheet(workbook, summarySheet, "Summary");
+
+  // Detailed invoices sheet
+  const invoiceData = [
+    [
+      "Invoice Number",
+      "Client Name",
+      "Branch",
+      "Employee",
+      "Status",
+      "Issue Date",
+      "Due Date",
+      "Subtotal",
+      "Tax",
+      "Discount",
+      "Total Amount",
+      "Services",
+    ],
+  ];
+
+  reportData.invoices.forEach((invoice: any) => {
+    const services = invoice.items
+      .map((item: any) => `${item.service.name} (€${item.rate})`)
+      .join("; ");
+
+    invoiceData.push([
+      invoice.invoiceNumber,
+      invoice.client.name,
+      invoice.branch.name,
+      invoice.employee.name,
+      invoice.status,
+      invoice.issuedDate.toLocaleDateString(),
+      invoice.dueDate.toLocaleDateString(),
+      `€${Number(invoice.subTotalAmount).toFixed(2)}`,
+      `€${Number(invoice.taxAmount).toFixed(2)}`,
+      `€${Number(invoice.discountAmount).toFixed(2)}`,
+      `€${Number(invoice.totalAmount).toFixed(2)}`,
+      services,
+    ]);
+  });
+
+  const invoiceSheet = XLSX.utils.aoa_to_sheet(invoiceData);
+  XLSX.utils.book_append_sheet(workbook, invoiceSheet, "Invoices");
+
+  // Generate buffer
+  const buffer = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
+  return buffer;
+};
+
 export default {
   createInvoice,
   createInvoiceFromTask,
@@ -812,4 +1023,6 @@ export default {
   generateInvoiceNumber,
   calculateItemTotal,
   calculateInvoiceTotals,
+  getRevenueReportData,
+  generateRevenueReportExcel,
 };

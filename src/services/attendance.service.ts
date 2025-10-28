@@ -1,6 +1,7 @@
 import { PrismaClient, Attendance, AttendanceStatus } from "@prisma/client";
 import ApiError from "../utils/ApiError";
 import { StatusCodes } from "http-status-codes";
+import { getItalianToday, ITALY_TIMEZONE } from "../utils/timezone";
 
 const prisma = new PrismaClient();
 

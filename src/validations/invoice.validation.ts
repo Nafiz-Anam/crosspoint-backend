@@ -152,6 +152,21 @@ const getInvoiceStats = {
   }),
 };
 
+const getRevenueReport = {
+  query: Joi.object().keys({
+    branchId: Joi.string().custom(objectId),
+    clientId: Joi.string().custom(objectId),
+    employeeId: Joi.string().custom(objectId),
+    status: Joi.string().valid(...Object.values(InvoiceStatus)),
+    startDate: Joi.date(),
+    endDate: Joi.date().when("startDate", {
+      is: Joi.exist(),
+      then: Joi.date().min(Joi.ref("startDate")),
+    }),
+    format: Joi.string().valid("excel", "csv").default("excel"),
+  }),
+};
+
 export default {
   createInvoice,
   getInvoices,
@@ -160,4 +175,5 @@ export default {
   deleteInvoice,
   updateInvoiceStatus,
   getInvoiceStats,
+  getRevenueReport,
 };

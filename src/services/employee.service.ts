@@ -21,6 +21,7 @@ const registerEmployee = async (email: string, password: string) => {
     data: {
       email,
       password: await encryptPassword(password),
+      phone: "0000000000", // Default phone for basic employees
       dateOfBirth: new Date("1990-01-01"), // Default date of birth for basic employees
       nationalIdentificationNumber: `TEMP-${Date.now()}`, // Temporary national ID for basic employees
     },
@@ -38,6 +39,7 @@ const createEmployee = async ({
   email,
   password,
   name,
+  phone,
   nationalIdentificationNumber,
   role = Role.EMPLOYEE,
   branchId,
@@ -47,6 +49,7 @@ const createEmployee = async ({
   email: string;
   password: string;
   name: string;
+  phone: string;
   nationalIdentificationNumber: string;
   role?: Role;
   branchId?: string;
@@ -118,6 +121,7 @@ const createEmployee = async ({
       data: {
         email,
         name,
+        phone,
         nationalIdentificationNumber,
         password: await encryptPassword(password),
         role,
@@ -291,11 +295,13 @@ const updateEmployeeById = async <Key extends keyof Employee>(
   if (!employee) {
     throw new ApiError(httpStatus.NOT_FOUND, "Employee not found");
   }
-  if (
-    updateBody.email &&
-    (await getEmployeeByEmail(updateBody.email as string))
-  ) {
-    throw new ApiError(httpStatus.BAD_REQUEST, "Email already taken");
+  if (updateBody.email) {
+    const existingEmployee = await getEmployeeByEmail(
+      updateBody.email as string
+    );
+    if (existingEmployee && existingEmployee.id !== employee.id) {
+      throw new ApiError(httpStatus.BAD_REQUEST, "Email already taken");
+    }
   }
   const updatedEmployee = await prisma.employee.update({
     where: { id: employee.id },
@@ -369,12 +375,14 @@ const getEmployeesWithPagination = async (
     sortType: "asc" | "desc";
     role?: string;
     isActive?: string;
+    branchId?: string;
   },
   excludeConditions: any[] = [],
   currentUserRole?: string,
   currentUserBranchId?: string
 ) => {
-  const { page, limit, search, sortBy, sortType, role, isActive } = options;
+  const { page, limit, search, sortBy, sortType, role, isActive, branchId } =
+    options;
   const skip = (page - 1) * limit;
 
   // Build where clause for search
@@ -404,12 +412,17 @@ const getEmployeesWithPagination = async (
     whereClause.isActive = isActive === "true";
   }
 
+  // Apply branch filtering
+  if (branchId) {
+    whereClause.branchId = branchId;
+  }
+
   // Apply exclude conditions
   if (excludeConditions.length > 0) {
     whereClause.AND = excludeConditions;
   }
 
-  // Apply branch filtering for managers
+  // Apply branch filtering for managers (override any branchId filter)
   if (currentUserRole === "MANAGER" && currentUserBranchId) {
     whereClause.branchId = currentUserBranchId;
   }

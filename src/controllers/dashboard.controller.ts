@@ -47,6 +47,7 @@ const getDashboardStats = catchAsync(async (req: Request, res: Response) => {
     totalEmployees,
     totalBranches,
     totalServices,
+    recentTasks,
   ] = await Promise.all([
     // Total invoices in date range
     prisma.invoice.count({
@@ -119,6 +120,36 @@ const getDashboardStats = catchAsync(async (req: Request, res: Response) => {
 
     // Total services
     prisma.service.count(),
+
+    // Recent tasks
+    prisma.task.findMany({
+      where: whereClause.branchId
+        ? { client: { branchId: whereClause.branchId } }
+        : {},
+      include: {
+        client: {
+          select: {
+            name: true,
+            email: true,
+          },
+        },
+        service: {
+          select: {
+            name: true,
+          },
+        },
+        assignedEmployee: {
+          select: {
+            name: true,
+            email: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+      take: 10,
+    }),
   ]);
 
   // Calculate additional metrics
@@ -176,6 +207,8 @@ const getDashboardStats = catchAsync(async (req: Request, res: Response) => {
       totalServices,
     },
     recentInvoices,
+    invoices: recentInvoices, // Add this for the frontend
+    tasks: recentTasks, // Add this for the frontend
   };
 
   sendResponse(

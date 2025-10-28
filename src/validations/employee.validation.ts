@@ -7,6 +7,7 @@ const createEmployee = {
     email: Joi.string().required().email(),
     password: Joi.string().required().custom(password),
     name: Joi.string().required(),
+    phone: Joi.string().required().min(7).max(20),
     nationalIdentificationNumber: Joi.string().required().min(5).max(20),
     role: Joi.string()
       .required()
@@ -28,6 +29,7 @@ const getEmployees = {
     nationalIdentificationNumber: Joi.string(),
     role: Joi.string().valid(Role.ADMIN, Role.HR, Role.MANAGER, Role.EMPLOYEE),
     isActive: Joi.boolean(),
+    branchId: Joi.string().optional(),
     sortBy: Joi.string(),
     sortType: Joi.string().valid("asc", "desc").optional(),
     limit: Joi.number().integer().min(1).max(100).optional(),
@@ -50,6 +52,7 @@ const updateEmployee = {
       email: Joi.string().email(),
       password: Joi.string().custom(password),
       name: Joi.string(),
+      phone: Joi.string().min(7).max(20),
       nationalIdentificationNumber: Joi.string().required().min(5).max(20),
       role: Joi.string().valid(
         Role.ADMIN,

@@ -41,6 +41,7 @@ model Employee {
   employeeId                   String?      @unique // Format: EMP-BR001-001, EMP-BR002-001, etc.
   nationalIdentificationNumber String       @unique // Codice fiscale (unique, required)
   email                        String       @unique
+  phone                        String // Required phone number
   name                         String?
   password                     String
   role                         Role         @default(EMPLOYEE)
@@ -186,6 +187,7 @@ model BankAccount {
   id            String   @id @default(uuid())
   bankName      String
   bankCountry   String? // Optional country field
+  accountNumber String // Required account number
   bankIban      String?  @unique // Optional and unique
   bankSwiftCode String? // Optional
   accountName   String? // Optional account holder name

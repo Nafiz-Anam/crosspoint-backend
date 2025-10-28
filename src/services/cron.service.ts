@@ -1,5 +1,5 @@
 import cron from "node-cron";
-import { InvoiceStatus, TaskStatus } from "@prisma/client";
+import { InvoiceStatus, TaskStatus, AttendanceStatus } from "@prisma/client";
 import prisma from "../client";
 import logger from "../config/logger";
 import emailService from "./email.service";
@@ -365,6 +365,164 @@ This is an automated notification from the Crosspoint system.
 };
 
 /**
+ * Auto clockout for employees who forgot to clock out
+ * This function runs daily at 9:00 PM Italian time to automatically clock out employees
+ */
+const autoClockOut = async () => {
+  try {
+    logger.info("Starting auto clockout check...");
+
+    // Get today's date in Italian timezone
+    const now = new Date();
+    const today = new Date(
+      now.toLocaleString("en-US", { timeZone: "Europe/Rome" })
+    );
+    today.setHours(0, 0, 0, 0);
+
+    // Find all employees who clocked in today but haven't clocked out
+    const incompleteAttendances = await prisma.attendance.findMany({
+      where: {
+        date: today,
+        checkIn: { not: null },
+        checkOut: null,
+      },
+      include: {
+        employee: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            employeeId: true,
+          },
+        },
+      },
+    });
+
+    logger.info(
+      `Found ${incompleteAttendances.length} employees who forgot to clock out`
+    );
+
+    if (incompleteAttendances.length === 0) {
+      logger.info("No employees need auto clockout");
+      return;
+    }
+
+    // Auto clockout each employee
+    for (const attendance of incompleteAttendances) {
+      const now = new Date();
+      const checkInTime = attendance.checkIn!;
+      const totalHours =
+        (now.getTime() - checkInTime.getTime()) / (1000 * 60 * 60); // Convert to hours
+
+      // Update status based on hours worked
+      let status = attendance.status;
+      if (totalHours < 4) {
+        status = AttendanceStatus.HALF_DAY;
+      }
+
+      // Update attendance record with clockout time
+      await prisma.attendance.update({
+        where: { id: attendance.id },
+        data: {
+          checkOut: now,
+          totalHours: Math.round(totalHours * 100) / 100, // Round to 2 decimal places
+          status,
+          notes: attendance.notes
+            ? `${attendance.notes}\n[Auto clocked out at 9 PM]`
+            : "[Auto clocked out at 9 PM]",
+        },
+      });
+
+      logger.info(
+        `Auto clocked out employee: ${attendance.employee.name} (${attendance.employee.employeeId})`
+      );
+
+      // Send notification email to employee
+      if (attendance.employee.email) {
+        await sendAutoClockOutNotification(
+          attendance.employee,
+          now,
+          totalHours
+        );
+      }
+    }
+
+    logger.info("Auto clockout completed successfully");
+  } catch (error) {
+    logger.error("Error during auto clockout:", error);
+  }
+};
+
+/**
+ * Send auto clockout notification to employee
+ * @param {Object} employee - Employee who was auto clocked out
+ * @param {Date} clockOutTime - Time when auto clockout occurred
+ * @param {number} totalHours - Total hours worked
+ */
+const sendAutoClockOutNotification = async (
+  employee: any,
+  clockOutTime: Date,
+  totalHours: number
+) => {
+  try {
+    const employeeName = employee.name || "Employee";
+    const employeeId = employee.employeeId || "N/A";
+    const formattedTime = clockOutTime.toLocaleString("it-IT", {
+      timeZone: "Europe/Rome",
+      dateStyle: "long",
+      timeStyle: "short",
+    });
+
+    const subject = "⏰ Auto Timbratura Uscita - Auto Clock Out";
+
+    const emailText = `
+Caro/a ${employeeName},
+
+Ti informiamo che è stata eseguita automaticamente la timbratura di uscita alle 21:00 (ora italiana) in quanto non avevi effettuato manualmente la timbratura oggi.
+
+Dettagli:
+- Nome: ${employeeName}
+- ID Dipendente: ${employeeId}
+- Orario Auto Uscita: ${formattedTime}
+- Ore Lavorate: ${totalHours.toFixed(2)} ore
+
+Nota: Si prega di ricordarsi di timbrare manualmente l'uscita alla fine della giornata lavorativa.
+
+Se pensi che ci sia un errore o se hai domande, ti preghiamo di contattare l'amministrazione.
+
+Cordiali saluti,
+Sistema Crosspoint
+---
+
+Dear ${employeeName},
+
+We would like to inform you that an automatic clock out was performed at 9:00 PM (Italian time) as you had not manually clocked out today.
+
+Details:
+- Name: ${employeeName}
+- Employee ID: ${employeeId}
+- Auto Clock Out Time: ${formattedTime}
+- Hours Worked: ${totalHours.toFixed(2)} hours
+
+Note: Please remember to manually clock out at the end of your workday.
+
+If you think there is an error or have any questions, please contact administration.
+
+Best regards,
+Crosspoint System
+    `;
+
+    await emailService.sendEmail(employee.email, subject, emailText);
+    logger.info(`Auto clockout notification sent to: ${employee.email}`);
+  } catch (error) {
+    logger.error(
+      `Error sending auto clockout notification to ${employee.email}:`,
+      error
+    );
+  }
+};
+
+/**
  * Check for employee birthdays and send notifications
  * This function runs daily at 9:00 AM to check for birthdays
  */
@@ -568,8 +726,20 @@ const initializeCronJobs = () => {
     }
   );
 
+  // Run every day at 9:00 PM Italian time for auto clockout
+  cron.schedule(
+    "0 21 * * *",
+    () => {
+      logger.info("Running auto clockout check...");
+      autoClockOut();
+    },
+    {
+      timezone: "Europe/Rome", // Italy timezone
+    }
+  );
+
   logger.info(
-    "Cron jobs initialized - overdue invoice check at 9:00 AM, task deadline check every 6 hours, birthday check at 9:30 AM daily"
+    "Cron jobs initialized - overdue invoice check at 9:00 AM, task deadline check every 6 hours, birthday check at 9:30 AM daily, auto clockout at 9:00 PM daily"
   );
 };
 
@@ -580,5 +750,7 @@ export default {
   sendTaskDeadlineNotification,
   checkEmployeeBirthdays,
   sendBirthdayNotifications,
+  autoClockOut,
+  sendAutoClockOutNotification,
   initializeCronJobs,
 };

@@ -37,6 +37,14 @@ router
     invoiceController.generateInvoiceNumber
   );
 
+router
+  .route("/export-revenue-report")
+  .get(
+    requirePermission(Permission.READ_INVOICE),
+    validate(invoiceValidation.getRevenueReport.query, "query"),
+    invoiceController.exportRevenueReport
+  );
+
 // router
 //   .route("/stats")
 //   .get(
