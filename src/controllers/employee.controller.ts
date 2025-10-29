@@ -213,18 +213,13 @@ const getHREmployees = catchAsync(async (req, res) => {
 });
 
 const getEmployeesList = catchAsync(async (req, res) => {
-  const {
-    sortBy = "createdAt",
-    sortType = "desc",
-    name,
-    role = "EMPLOYEE",
-  } = req.query;
+  const { sortBy = "createdAt", sortType = "desc", name, role } = req.query;
 
   const options = {
     sortBy: sortBy as string,
     sortType: sortType as "asc" | "desc",
-    role: role as string,
-    name: name as string,
+    role: role ? (role as string) : undefined,
+    name: name ? (name as string) : undefined,
   };
 
   // Get current user info for branch filtering
