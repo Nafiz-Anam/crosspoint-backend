@@ -148,28 +148,70 @@ const generateInvoiceId = async (branchId: string): Promise<string> => {
 };
 
 /**
- * Generate unique invoice number
+ * Generate unique invoice number (monthly format: INV-YYYYMM-XXXX)
+ * Handles race conditions by checking if invoiceNumber exists and retrying if needed
  * @returns {Promise<string>}
  */
 const generateInvoiceNumber = async (): Promise<string> => {
   const date = new Date();
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
+  const maxRetries = 10; // Prevent infinite loops
+  const invoiceNumberPrefix = `INV-${year}${month}-`;
 
-  const startOfMonth = new Date(year, date.getMonth(), 1);
-  const endOfMonth = new Date(year, date.getMonth() + 1, 0);
-
-  const count = await prisma.invoice.count({
-    where: {
-      createdAt: {
-        gte: startOfMonth,
-        lte: endOfMonth,
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    // Get the maximum invoice number for this month
+    // This finds the highest existing number, so we can increment from there
+    const invoices = await prisma.invoice.findMany({
+      where: {
+        invoiceNumber: {
+          startsWith: invoiceNumberPrefix,
+        },
       },
-    },
-  });
+      select: {
+        invoiceNumber: true,
+      },
+      orderBy: {
+        invoiceNumber: "desc",
+      },
+      take: 1, // Get only the highest one
+    });
 
-  const sequence = String(count + 1).padStart(4, "0");
-  return `INV-${year}${month}-${sequence}`;
+    let nextSequence = 1; // Default to 1 if no invoices exist this month
+
+    if (invoices.length > 0 && invoices[0].invoiceNumber) {
+      // Extract sequence number from the highest invoiceNumber
+      // Format: INV-202510-0001
+      const lastInvoiceNumber = invoices[0].invoiceNumber;
+      const sequencePart = lastInvoiceNumber.split("-").pop(); // Get "0001"
+      if (sequencePart) {
+        const lastSequence = parseInt(sequencePart, 10);
+        nextSequence = lastSequence + 1;
+      }
+    }
+
+    // Generate new invoiceNumber with next sequence
+    const sequence = String(nextSequence).padStart(4, "0");
+    const invoiceNumber = `${invoiceNumberPrefix}${sequence}`;
+
+    // Check if this invoiceNumber already exists (handles race conditions)
+    const existingInvoice = await prisma.invoice.findUnique({
+      where: { invoiceNumber },
+      select: { id: true },
+    });
+
+    if (!existingInvoice) {
+      // InvoiceNumber is available
+      return invoiceNumber;
+    }
+
+    // If invoiceNumber exists (race condition), increment and try again
+    // On next iteration, it will find the new highest number
+  }
+
+  // If we've exhausted retries, use timestamp-based approach as fallback
+  const timestamp = Date.now().toString().slice(-6);
+  return `${invoiceNumberPrefix}${timestamp}`;
 };
 
 /**
@@ -271,65 +313,107 @@ const createInvoice = async (
     discountAmount
   );
 
-  const invoiceNumber =
+  // Generate invoice number and ID with retry logic to handle race conditions
+  let invoiceNumber =
     invoiceData.invoiceNumber || (await generateInvoiceNumber());
-  const invoiceId = await generateInvoiceId(invoiceData.branchId);
+  let invoiceId = await generateInvoiceId(invoiceData.branchId);
+  const maxRetries = 5;
+  let lastError: any;
+  let invoice;
 
-  // Create invoice with items in a transaction
-  const invoice = await prisma.$transaction(async (tx) => {
-    const newInvoice = await tx.invoice.create({
-      data: {
-        clientId: invoiceData.clientId,
-        branchId: invoiceData.branchId,
-        employeeId: invoiceData.employeeId,
-        taskId: invoiceData.taskId,
-        invoiceNumber,
-        invoiceId,
-        subTotalAmount,
-        discountAmount,
-        taxAmount,
-        taxRate,
-        totalAmount,
-        dueDate: invoiceData.dueDate,
-        status: InvoiceStatus.UNPAID,
-        notes: invoiceData.notes,
-        thanksMessage: invoiceData.thanksMessage,
-        paymentTerms: invoiceData.paymentTerms,
-        paymentMethod: invoiceData.paymentMethod || "Internet Banking",
-        bankAccountId: invoiceData.bankAccountId,
-        // Company Information Fields
-        companyName: invoiceData.companyName,
-        companyTagline: invoiceData.companyTagline,
-        companyAddress: invoiceData.companyAddress,
-        companyCity: invoiceData.companyCity,
-        companyPhone: invoiceData.companyPhone,
-        companyEmail: invoiceData.companyEmail,
-        companyWebsite: invoiceData.companyWebsite,
-        companyLogo: invoiceData.companyLogo,
-      },
-    });
-
-    // Create invoice items with calculated totals
-    const invoiceItems = await Promise.all(
-      invoiceData.items.map((item) => {
-        const discount = item.discount || 0;
-        const total = calculateItemTotal(item.rate, discount);
-
-        return tx.invoiceItem.create({
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      // Create invoice with items in a transaction
+      invoice = await prisma.$transaction(async (tx) => {
+        const newInvoice = await tx.invoice.create({
           data: {
-            invoiceId: newInvoice.id,
-            serviceId: item.serviceId,
-            description: item.description,
-            rate: item.rate,
-            discount: discount,
-            total: total,
+            clientId: invoiceData.clientId,
+            branchId: invoiceData.branchId,
+            employeeId: invoiceData.employeeId,
+            taskId: invoiceData.taskId,
+            invoiceNumber,
+            invoiceId,
+            subTotalAmount,
+            discountAmount,
+            taxAmount,
+            taxRate,
+            totalAmount,
+            dueDate: invoiceData.dueDate,
+            status: InvoiceStatus.UNPAID,
+            notes: invoiceData.notes,
+            thanksMessage: invoiceData.thanksMessage,
+            paymentTerms: invoiceData.paymentTerms,
+            paymentMethod: invoiceData.paymentMethod || "Internet Banking",
+            bankAccountId: invoiceData.bankAccountId,
+            // Company Information Fields
+            companyName: invoiceData.companyName,
+            companyTagline: invoiceData.companyTagline,
+            companyAddress: invoiceData.companyAddress,
+            companyCity: invoiceData.companyCity,
+            companyPhone: invoiceData.companyPhone,
+            companyEmail: invoiceData.companyEmail,
+            companyWebsite: invoiceData.companyWebsite,
+            companyLogo: invoiceData.companyLogo,
           },
         });
-      })
-    );
 
-    return { ...newInvoice, items: invoiceItems };
-  });
+        // Create invoice items with calculated totals
+        const invoiceItems = await Promise.all(
+          invoiceData.items.map((item) => {
+            const discount = item.discount || 0;
+            const total = calculateItemTotal(item.rate, discount);
+
+            return tx.invoiceItem.create({
+              data: {
+                invoiceId: newInvoice.id,
+                serviceId: item.serviceId,
+                description: item.description,
+                rate: item.rate,
+                discount: discount,
+                total: total,
+              },
+            });
+          })
+        );
+
+        return { ...newInvoice, items: invoiceItems };
+      });
+
+      // Success, break out of retry loop
+      break;
+    } catch (error: any) {
+      lastError = error;
+      // Check if it's a duplicate key error for invoiceNumber or invoiceId
+      if (
+        error.code === "P2002" &&
+        (error.meta?.target?.includes("invoiceNumber") ||
+          error.meta?.target?.includes("invoiceId"))
+      ) {
+        // Regenerate invoiceNumber and/or invoiceId and retry
+        if (attempt < maxRetries - 1) {
+          if (error.meta?.target?.includes("invoiceNumber")) {
+            invoiceNumber = await generateInvoiceNumber();
+          }
+          if (error.meta?.target?.includes("invoiceId")) {
+            invoiceId = await generateInvoiceId(invoiceData.branchId);
+          }
+          continue;
+        }
+      }
+      // If it's not a duplicate key error or we've exhausted retries, throw
+      throw error;
+    }
+  }
+
+  if (!invoice) {
+    throw (
+      lastError ||
+      new ApiError(
+        httpStatus.INTERNAL_SERVER_ERROR,
+        "Failed to create invoice after retries"
+      )
+    );
+  }
 
   return invoice;
 };
