@@ -98,6 +98,17 @@ const getDashboardStats = catchAsync(async (req: Request, res: Response) => {
         client: true,
         branch: true,
         employee: true,
+        items: {
+          include: {
+            service: {
+              select: {
+                id: true,
+                name: true,
+                category: true,
+              },
+            },
+          },
+        },
       },
       orderBy: {
         issuedDate: "desc",

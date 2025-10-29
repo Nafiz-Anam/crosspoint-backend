@@ -313,7 +313,9 @@ const updateEmployeeById = async <Key extends keyof Employee>(
 
 /**
  * Delete employee by id
- * @param {ObjectId} employeeId
+ * Automatically deletes all associated tokens and attendances
+ * Blocks deletion if employee has assigned invoices or tasks
+ * @param {string} employeeId
  * @returns {Promise<Employee>}
  */
 const deleteEmployeeById = async (employeeId: string): Promise<Employee> => {
@@ -321,6 +323,41 @@ const deleteEmployeeById = async (employeeId: string): Promise<Employee> => {
   if (!employee) {
     throw new ApiError(httpStatus.NOT_FOUND, "Employee not found");
   }
+
+  // Check if employee has associated invoices
+  const invoiceCount = await prisma.invoice.count({
+    where: { employeeId: employee.id },
+  });
+
+  if (invoiceCount > 0) {
+    throw new ApiError(
+      httpStatus.BAD_REQUEST,
+      `Cannot delete employee. Employee has ${invoiceCount} associated invoice(s). Please reassign or delete the invoices first.`
+    );
+  }
+
+  // Check if employee has assigned tasks
+  const taskCount = await prisma.task.count({
+    where: { assignedEmployeeId: employee.id },
+  });
+
+  if (taskCount > 0) {
+    throw new ApiError(
+      httpStatus.BAD_REQUEST,
+      `Cannot delete employee. Employee has ${taskCount} assigned task(s). Please reassign or complete the tasks first.`
+    );
+  }
+
+  // Delete all tokens associated with this employee
+  // This explicitly cleans up tokens before deletion
+  // The schema also has onDelete: Cascade as a backup
+  await prisma.token.deleteMany({
+    where: { employeeId: employee.id },
+  });
+
+  // Prisma will handle cascade deletion for:
+  // - Attendance records (via onDelete: Cascade in schema)
+
   await prisma.employee.delete({ where: { id: employee.id } });
   return employee;
 };

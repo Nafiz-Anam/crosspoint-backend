@@ -179,7 +179,7 @@ model Token {
   expires     DateTime
   blacklisted Boolean
   createdAt   DateTime  @default(now())
-  employee    Employee  @relation(fields: [employeeId], references: [id])
+  employee    Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   employeeId  String
 }
 
