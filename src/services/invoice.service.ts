@@ -85,24 +85,66 @@ const generateInvoiceId = async (branchId: string): Promise<string> => {
   const month = date.getMonth() + 1;
   const day = date.getDate();
 
-  const startOfDay = new Date(year, month - 1, day, 0, 0, 0);
-  const endOfDay = new Date(year, month - 1, day, 23, 59, 59);
-
-  const count = await prisma.invoice.count({
-    where: {
-      branchId,
-      createdAt: {
-        gte: startOfDay,
-        lte: endOfDay,
-      },
-    },
-  });
-
   const monthStr = month.toString().padStart(2, "0");
   const dayStr = day.toString().padStart(2, "0");
   const dateCode = `${year}${monthStr}${dayStr}`;
-  const sequence = String(count + 1).padStart(3, "0");
-  return `INV-${branch.branchId}-${dateCode}-${sequence}`;
+  const maxRetries = 10; // Prevent infinite loops
+  const invoiceIdPrefix = `INV-${branch.branchId}-${dateCode}-`;
+
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    // Get the maximum invoice ID for this branch and date
+    // This finds the highest existing number, so we can increment from there
+    const invoices = await prisma.invoice.findMany({
+      where: {
+        branchId: branchId,
+        invoiceId: {
+          startsWith: invoiceIdPrefix,
+        },
+      },
+      select: {
+        invoiceId: true,
+      },
+      orderBy: {
+        invoiceId: "desc",
+      },
+      take: 1, // Get only the highest one
+    });
+
+    let nextSequence = 1; // Default to 1 if no invoices exist
+
+    if (invoices.length > 0 && invoices[0].invoiceId) {
+      // Extract sequence number from the highest invoiceId
+      // Format: INV-BR-004-20251029-001
+      const lastInvoiceId = invoices[0].invoiceId;
+      const sequencePart = lastInvoiceId.split("-").pop(); // Get "001"
+      if (sequencePart) {
+        const lastSequence = parseInt(sequencePart, 10);
+        nextSequence = lastSequence + 1;
+      }
+    }
+
+    // Generate new invoiceId with next sequence
+    const sequence = String(nextSequence).padStart(3, "0");
+    const invoiceId = `${invoiceIdPrefix}${sequence}`;
+
+    // Check if this invoiceId already exists (handles race conditions)
+    const existingInvoice = await prisma.invoice.findUnique({
+      where: { invoiceId },
+      select: { id: true },
+    });
+
+    if (!existingInvoice) {
+      // InvoiceId is available
+      return invoiceId;
+    }
+
+    // If invoiceId exists (race condition), increment and try again
+    // On next iteration, it will find the new highest number
+  }
+
+  // If we've exhausted retries, use timestamp-based approach as fallback
+  const timestamp = Date.now().toString().slice(-6);
+  return `${invoiceIdPrefix}${timestamp}`;
 };
 
 /**

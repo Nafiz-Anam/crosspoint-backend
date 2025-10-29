@@ -5,6 +5,7 @@ import ApiError from "../utils/ApiError";
 
 /**
  * Generate unique task ID for a branch
+ * Handles race conditions by checking if taskId exists and retrying if needed
  * @param {string} branchId
  * @returns {Promise<string>}
  */
@@ -17,18 +18,66 @@ const generateTaskId = async (branchId: string): Promise<string> => {
     throw new ApiError(httpStatus.BAD_REQUEST, "Branch not found");
   }
 
-  // Get count of tasks for clients in this branch
-  const taskCount = await prisma.task.count({
-    where: {
-      client: {
-        branchId: branchId,
-      },
-    },
-  });
-
   const currentYear = new Date().getFullYear();
-  const sequence = String(taskCount + 1).padStart(3, "0");
-  return `TSK-${branch.branchId}-${currentYear}-${sequence}`;
+  const maxRetries = 10; // Prevent infinite loops
+  const taskIdPrefix = `TSK-${branch.branchId}-${currentYear}-`;
+
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    // Get the maximum sequence number for tasks in this branch for the current year
+    // This finds the highest existing number, so we can increment from there
+    const tasks = await prisma.task.findMany({
+      where: {
+        client: {
+          branchId: branchId,
+        },
+        taskId: {
+          startsWith: taskIdPrefix,
+        },
+      },
+      select: {
+        taskId: true,
+      },
+      orderBy: {
+        taskId: "desc",
+      },
+      take: 1, // Get only the highest one
+    });
+
+    let nextSequence = 1; // Default to 1 if no tasks exist
+
+    if (tasks.length > 0 && tasks[0].taskId) {
+      // Extract sequence number from the highest taskId
+      // Format: TSK-BR-004-2025-001
+      const lastTaskId = tasks[0].taskId;
+      const sequencePart = lastTaskId.split("-").pop(); // Get "001"
+      if (sequencePart) {
+        const lastSequence = parseInt(sequencePart, 10);
+        nextSequence = lastSequence + 1;
+      }
+    }
+
+    // Generate new taskId with next sequence
+    const sequence = String(nextSequence).padStart(3, "0");
+    const taskId = `${taskIdPrefix}${sequence}`;
+
+    // Check if this taskId already exists (handles race conditions)
+    const existingTask = await prisma.task.findUnique({
+      where: { taskId },
+      select: { id: true },
+    });
+
+    if (!existingTask) {
+      // TaskId is available
+      return taskId;
+    }
+
+    // If taskId exists (race condition), increment and try again
+    // On next iteration, it will find the new highest number
+  }
+
+  // If we've exhausted retries, use timestamp-based approach as fallback
+  const timestamp = Date.now().toString().slice(-6);
+  return `${taskIdPrefix}${timestamp}`;
 };
 
 /**
@@ -79,43 +128,73 @@ const createTask = async (
     throw new ApiError(httpStatus.NOT_FOUND, "Employee not found or inactive");
   }
 
-  // Generate task ID
-  const taskId = await generateTaskId(client.branchId);
-
   // Auto-generate title based on service and client
   const generatedTitle = `${service.name} for ${client.name}`;
 
-  // Create task
-  const task = await prisma.task.create({
-    data: {
-      taskId,
-      title: generatedTitle,
-      description,
-      clientId,
-      serviceId,
-      assignedEmployeeId,
-      status,
-      dueDate,
-      startDate,
-    },
-    include: {
-      client: {
+  // Create task with retry logic to handle race conditions
+  let task;
+  let taskId = await generateTaskId(client.branchId);
+  const maxRetries = 5;
+  let lastError: any;
+
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      task = await prisma.task.create({
+        data: {
+          taskId,
+          title: generatedTitle,
+          description,
+          clientId,
+          serviceId,
+          assignedEmployeeId,
+          status,
+          dueDate,
+          startDate,
+        },
         include: {
-          branch: true,
+          client: {
+            include: {
+              branch: true,
+            },
+          },
+          service: true,
+          assignedEmployee: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              employeeId: true,
+              role: true,
+            },
+          },
         },
-      },
-      service: true,
-      assignedEmployee: {
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          employeeId: true,
-          role: true,
-        },
-      },
-    },
-  });
+      });
+      // Success, break out of retry loop
+      break;
+    } catch (error: any) {
+      lastError = error;
+      // Check if it's a duplicate key error for taskId
+      if (error.code === "P2002" && error.meta?.target?.includes("taskId")) {
+        // Regenerate taskId and retry
+        if (attempt < maxRetries - 1) {
+          taskId = await generateTaskId(client.branchId);
+          continue;
+        }
+      }
+      // If it's not a duplicate key error or we've exhausted retries, throw
+      throw error;
+    }
+  }
+
+  if (!task) {
+    throw (
+      lastError ||
+      new ApiError(
+        httpStatus.INTERNAL_SERVER_ERROR,
+        "Failed to create task after retries"
+      )
+    );
+  }
 
   return task;
 };

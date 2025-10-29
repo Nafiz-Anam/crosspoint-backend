@@ -5,64 +5,129 @@ import { StatusCodes } from "http-status-codes";
 const prisma = new PrismaClient();
 
 // Generate a unique branch ID
+// Handles race conditions by checking if branchId exists and retrying if needed
 const generateBranchId = async (): Promise<string> => {
-  const lastBranch = await prisma.branch.findFirst({
-    orderBy: { branchId: "desc" },
-  });
-  if (!lastBranch) {
-    return "BR-001";
+  const maxRetries = 10; // Prevent infinite loops
+
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    // Get the maximum branch ID to find the highest existing number
+    const branches = await prisma.branch.findMany({
+      where: {
+        branchId: {
+          startsWith: "BR-",
+        },
+      },
+      select: {
+        branchId: true,
+      },
+      orderBy: {
+        branchId: "desc",
+      },
+      take: 1, // Get only the highest one
+    });
+
+    let nextSequence = 1; // Default to 1 if no branches exist
+
+    if (branches.length > 0 && branches[0].branchId) {
+      // Extract sequence number from the highest branchId
+      // Format: BR-001
+      const lastBranchId = branches[0].branchId;
+      const sequencePart = lastBranchId.split("-").pop(); // Get "001"
+      if (sequencePart) {
+        const lastSequence = parseInt(sequencePart, 10);
+        nextSequence = lastSequence + 1;
+      }
+    }
+
+    // Generate new branchId with next sequence
+    const sequence = String(nextSequence).padStart(3, "0");
+    const branchId = `BR-${sequence}`;
+
+    // Check if this branchId already exists (handles race conditions)
+    const existingBranch = await prisma.branch.findUnique({
+      where: { branchId },
+      select: { id: true },
+    });
+
+    if (!existingBranch) {
+      // BranchId is available
+      return branchId;
+    }
+
+    // If branchId exists (race condition), increment and try again
+    // On next iteration, it will find the new highest number
   }
-  const lastNumber = parseInt(lastBranch.branchId.split("-")[1]);
-  const nextNumber = lastNumber + 1;
-  return `BR-${nextNumber.toString().padStart(3, "0")}`;
+
+  // If we've exhausted retries, use timestamp-based approach as fallback
+  const timestamp = Date.now().toString().slice(-6);
+  return `BR-${timestamp}`;
 };
 
 // Generate a unique employee ID for a specific branch
+// Handles race conditions by checking if employeeId exists and retrying if needed
 const generateEmployeeId = async (branchId: string): Promise<string> => {
   const branch = await prisma.branch.findUnique({ where: { id: branchId } });
   if (!branch) {
     throw new ApiError(StatusCodes.NOT_FOUND, "Branch not found");
   }
   const branchCode = branch.branchId;
+  const maxRetries = 10; // Prevent infinite loops
+  const employeeIdPrefix = `EMP-${branchCode}-`;
 
-  // Use a more robust approach with database transaction
-  return await prisma.$transaction(async (tx) => {
-    // Get the count of employees for this branch
-    const employeeCount = await tx.employee.count({
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    // Get the maximum employee ID for this branch
+    // This finds the highest existing number, so we can increment from there
+    const employees = await prisma.employee.findMany({
       where: {
         branchId: branchId,
-        employeeId: { startsWith: `EMP-${branchCode}-` },
+        employeeId: {
+          startsWith: employeeIdPrefix,
+        },
       },
+      select: {
+        employeeId: true,
+      },
+      orderBy: {
+        employeeId: "desc",
+      },
+      take: 1, // Get only the highest one
     });
 
-    // Generate the next employee ID
-    const nextNumber = employeeCount + 1;
-    const employeeId = `EMP-${branchCode}-${nextNumber
-      .toString()
-      .padStart(3, "0")}`;
+    let nextSequence = 1; // Default to 1 if no employees exist
 
-    // Double-check that this ID doesn't exist (extra safety)
-    const existingEmployee = await tx.employee.findUnique({
+    if (employees.length > 0 && employees[0].employeeId) {
+      // Extract sequence number from the highest employeeId
+      // Format: EMP-BR-004-001
+      const lastEmployeeId = employees[0].employeeId;
+      const sequencePart = lastEmployeeId.split("-").pop(); // Get "001"
+      if (sequencePart) {
+        const lastSequence = parseInt(sequencePart, 10);
+        nextSequence = lastSequence + 1;
+      }
+    }
+
+    // Generate new employeeId with next sequence
+    const sequence = String(nextSequence).padStart(3, "0");
+    const employeeId = `${employeeIdPrefix}${sequence}`;
+
+    // Check if this employeeId already exists (handles race conditions)
+    const existingEmployee = await prisma.employee.findUnique({
       where: { employeeId },
       select: { id: true },
     });
 
-    if (existingEmployee) {
-      // If it exists, find the highest number and increment
-      const lastEmployee = await tx.employee.findFirst({
-        where: { employeeId: { startsWith: `EMP-${branchCode}-` } },
-        orderBy: { employeeId: "desc" },
-      });
-
-      if (lastEmployee && lastEmployee.employeeId) {
-        const lastNumber = parseInt(lastEmployee.employeeId.split("-")[2]);
-        const finalNumber = lastNumber + 1;
-        return `EMP-${branchCode}-${finalNumber.toString().padStart(3, "0")}`;
-      }
+    if (!existingEmployee) {
+      // EmployeeId is available
+      return employeeId;
     }
 
-    return employeeId;
-  });
+    // If employeeId exists (race condition), increment and try again
+    // On next iteration, it will find the new highest number
+  }
+
+  // If we've exhausted retries, use timestamp-based approach as fallback
+  const timestamp = Date.now().toString().slice(-6);
+  return `${employeeIdPrefix}${timestamp}`;
 };
 
 // Generate a unique customer ID for a specific branch
@@ -85,6 +150,7 @@ const generateCustomerId = async (branchId: string): Promise<string> => {
 };
 
 // Generate a unique invoice ID for a specific branch, year, month, and date
+// Handles race conditions by checking if invoiceId exists and retrying if needed
 const generateInvoiceId = async (
   branchId: string,
   year: number = new Date().getFullYear(),
@@ -99,18 +165,62 @@ const generateInvoiceId = async (
   const monthStr = month.toString().padStart(2, "0");
   const dateStr = date.toString().padStart(2, "0");
   const dateCode = `${year}${monthStr}${dateStr}`;
-  const lastInvoice = await prisma.invoice.findFirst({
-    where: { invoiceId: { startsWith: `INV-${branchCode}-${dateCode}-` } },
-    orderBy: { invoiceId: "desc" },
-  });
-  if (!lastInvoice) {
-    return `INV-${branchCode}-${dateCode}-001`;
+  const maxRetries = 10; // Prevent infinite loops
+  const invoiceIdPrefix = `INV-${branchCode}-${dateCode}-`;
+
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    // Get the maximum invoice ID for this branch and date
+    // This finds the highest existing number, so we can increment from there
+    const invoices = await prisma.invoice.findMany({
+      where: {
+        invoiceId: {
+          startsWith: invoiceIdPrefix,
+        },
+      },
+      select: {
+        invoiceId: true,
+      },
+      orderBy: {
+        invoiceId: "desc",
+      },
+      take: 1, // Get only the highest one
+    });
+
+    let nextSequence = 1; // Default to 1 if no invoices exist
+
+    if (invoices.length > 0 && invoices[0].invoiceId) {
+      // Extract sequence number from the highest invoiceId
+      // Format: INV-BR-004-20251029-001
+      const lastInvoiceId = invoices[0].invoiceId;
+      const sequencePart = lastInvoiceId.split("-").pop(); // Get "001"
+      if (sequencePart) {
+        const lastSequence = parseInt(sequencePart, 10);
+        nextSequence = lastSequence + 1;
+      }
+    }
+
+    // Generate new invoiceId with next sequence
+    const sequence = String(nextSequence).padStart(3, "0");
+    const invoiceId = `${invoiceIdPrefix}${sequence}`;
+
+    // Check if this invoiceId already exists (handles race conditions)
+    const existingInvoice = await prisma.invoice.findUnique({
+      where: { invoiceId },
+      select: { id: true },
+    });
+
+    if (!existingInvoice) {
+      // InvoiceId is available
+      return invoiceId;
+    }
+
+    // If invoiceId exists (race condition), increment and try again
+    // On next iteration, it will find the new highest number
   }
-  const lastNumber = parseInt(lastInvoice.invoiceId!.split("-")[3]);
-  const nextNumber = lastNumber + 1;
-  return `INV-${branchCode}-${dateCode}-${nextNumber
-    .toString()
-    .padStart(3, "0")}`;
+
+  // If we've exhausted retries, use timestamp-based approach as fallback
+  const timestamp = Date.now().toString().slice(-6);
+  return `${invoiceIdPrefix}${timestamp}`;
 };
 
 // Generate a unique service ID

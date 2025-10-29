@@ -5,6 +5,7 @@ import ApiError from "../utils/ApiError";
 
 /**
  * Generate unique customer ID for a branch
+ * Handles race conditions by checking if clientId exists and retrying if needed
  * @param {string} branchId
  * @returns {Promise<string>}
  */
@@ -17,13 +18,63 @@ const generateClientId = async (branchId: string): Promise<string> => {
     throw new ApiError(httpStatus.BAD_REQUEST, "Branch not found");
   }
 
-  // Get count of clients in this branch
-  const clientCount = await prisma.client.count({
-    where: { branchId },
-  });
+  const maxRetries = 10; // Prevent infinite loops
+  const clientIdPrefix = `CLT-${branch.branchId}-`;
 
-  const sequence = String(clientCount + 1).padStart(3, "0");
-  return `CLT-${branch.branchId}-${sequence}`;
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    // Get the maximum client ID for this branch
+    // This finds the highest existing number, so we can increment from there
+    const clients = await prisma.client.findMany({
+      where: {
+        branchId: branchId,
+        clientId: {
+          startsWith: clientIdPrefix,
+        },
+      },
+      select: {
+        clientId: true,
+      },
+      orderBy: {
+        clientId: "desc",
+      },
+      take: 1, // Get only the highest one
+    });
+
+    let nextSequence = 1; // Default to 1 if no clients exist
+
+    if (clients.length > 0 && clients[0].clientId) {
+      // Extract sequence number from the highest clientId
+      // Format: CLT-BR-004-001
+      const lastClientId = clients[0].clientId;
+      const sequencePart = lastClientId.split("-").pop(); // Get "001"
+      if (sequencePart) {
+        const lastSequence = parseInt(sequencePart, 10);
+        nextSequence = lastSequence + 1;
+      }
+    }
+
+    // Generate new clientId with next sequence
+    const sequence = String(nextSequence).padStart(3, "0");
+    const clientId = `${clientIdPrefix}${sequence}`;
+
+    // Check if this clientId already exists (handles race conditions)
+    const existingClient = await prisma.client.findUnique({
+      where: { clientId },
+      select: { id: true },
+    });
+
+    if (!existingClient) {
+      // ClientId is available
+      return clientId;
+    }
+
+    // If clientId exists (race condition), increment and try again
+    // On next iteration, it will find the new highest number
+  }
+
+  // If we've exhausted retries, use timestamp-based approach as fallback
+  const timestamp = Date.now().toString().slice(-6);
+  return `${clientIdPrefix}${timestamp}`;
 };
 
 /**
