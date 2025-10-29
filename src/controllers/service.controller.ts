@@ -103,7 +103,16 @@ const getAllServices = catchAsync(async (req, res) => {
     category: category as string,
   };
 
-  const services = await serviceService.getAllServicesForDropdown(options);
+  // Get current user info (for branch filtering if needed in future)
+  const currentUser = req.employee || req.user;
+  const currentUserRole = currentUser?.role ?? undefined;
+  const currentUserBranchId = currentUser?.branchId ?? undefined;
+
+  const services = await serviceService.getAllServicesForDropdown(
+    options,
+    currentUserRole,
+    currentUserBranchId
+  );
 
   res.status(httpStatus.OK).json({
     success: true,

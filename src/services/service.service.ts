@@ -236,7 +236,9 @@ const getAllServicesForDropdown = async (
     sortBy?: string;
     sortType?: "asc" | "desc";
     category?: string;
-  } = {}
+  } = {},
+  currentUserRole?: string,
+  currentUserBranchId?: string
 ): Promise<Service[]> => {
   const { search, sortBy = "name", sortType = "asc", category } = options;
 
@@ -255,6 +257,9 @@ const getAllServicesForDropdown = async (
   if (category) {
     filter.category = category;
   }
+
+  // Note: Services are typically shared across branches, so we don't apply branch filtering here
+  // If branch filtering is needed for services in the future, add it here
 
   const services = await prisma.service.findMany({
     where: filter,

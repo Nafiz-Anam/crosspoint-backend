@@ -504,6 +504,97 @@ const getEmployeesWithPagination = async (
   };
 };
 
+/**
+ * Get all employees without pagination (for dropdowns, etc.)
+ * @param {Object} options - Sorting options
+ * @param {string} currentUserRole - Current user's role for branch filtering
+ * @param {string} currentUserBranchId - Current user's branch ID for filtering
+ * @returns {Promise<Employee[]>}
+ */
+type EmployeeListItem = Pick<
+  Employee,
+  | "id"
+  | "employeeId"
+  | "name"
+  | "email"
+  | "phone"
+  | "nationalIdentificationNumber"
+  | "dateOfBirth"
+  | "profileImage"
+  | "branchId"
+  | "role"
+  | "isActive"
+  | "isEmailVerified"
+  | "permissions"
+  | "createdAt"
+  | "updatedAt"
+> & {
+  branch: { id: string; name: string; branchId: string } | null;
+};
+
+const getAllEmployeesForDropdown = async (
+  options: {
+    sortBy?: string;
+    sortType?: "asc" | "desc";
+    role?: string;
+    name?: string;
+  } = {},
+  currentUserRole?: string,
+  currentUserBranchId?: string
+): Promise<EmployeeListItem[]> => {
+  const { sortBy = "createdAt", sortType = "desc", role, name } = options;
+
+  // Build filter object
+  let whereClause: any = {};
+
+  if (role) {
+    whereClause.role = role;
+  }
+
+  if (name) {
+    whereClause.name = {
+      contains: name,
+      mode: "insensitive" as const,
+    };
+  }
+
+  // Apply branch filtering for managers
+  if (currentUserRole === "MANAGER" && currentUserBranchId) {
+    whereClause.branchId = currentUserBranchId;
+  }
+
+  const employees = await prisma.employee.findMany({
+    where: whereClause,
+    orderBy: { [sortBy]: sortType },
+    select: {
+      id: true,
+      employeeId: true,
+      name: true,
+      email: true,
+      phone: true,
+      nationalIdentificationNumber: true,
+      dateOfBirth: true,
+      profileImage: true,
+      branchId: true,
+      role: true,
+      isActive: true,
+      isEmailVerified: true,
+      permissions: true,
+      createdAt: true,
+      updatedAt: true,
+      branch: {
+        select: {
+          id: true,
+          name: true,
+          branchId: true,
+        },
+      },
+    },
+  });
+
+  return employees as EmployeeListItem[];
+};
+
 export default {
   createEmployee,
   queryEmployees,
@@ -514,4 +605,5 @@ export default {
   deleteEmployeeById,
   registerEmployee,
   uploadProfileImage,
+  getAllEmployeesForDropdown,
 };

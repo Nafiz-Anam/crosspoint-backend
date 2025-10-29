@@ -92,7 +92,16 @@ const getAllClients = catchAsync(async (req, res) => {
     sortType: sortType as "asc" | "desc",
   };
 
-  const clients = await clientService.getAllClientsForDropdown(options);
+  // Get current user info for branch filtering
+  const currentUser = req.employee || req.user;
+  const currentUserRole = currentUser?.role ?? undefined;
+  const currentUserBranchId = currentUser?.branchId ?? undefined;
+
+  const clients = await clientService.getAllClientsForDropdown(
+    options,
+    currentUserRole,
+    currentUserBranchId
+  );
 
   res.status(httpStatus.OK).json({
     success: true,

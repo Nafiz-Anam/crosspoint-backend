@@ -213,23 +213,37 @@ const getHREmployees = catchAsync(async (req, res) => {
 });
 
 const getEmployeesList = catchAsync(async (req, res) => {
-  const filter = { ...pick(req.query, ["name"]), role: "EMPLOYEE" };
-  const options = pick(req.query, ["sortBy", "limit", "page"]);
+  const {
+    sortBy = "createdAt",
+    sortType = "desc",
+    name,
+    role = "EMPLOYEE",
+  } = req.query;
 
-  // Convert string values to appropriate types for options
-  const processedOptions = {
-    ...options,
-    limit: options.limit ? parseInt(options.limit as string, 10) : undefined,
-    page: options.page ? parseInt(options.page as string, 10) : undefined,
+  const options = {
+    sortBy: sortBy as string,
+    sortType: sortType as "asc" | "desc",
+    role: role as string,
+    name: name as string,
   };
 
-  const result = await employeeService.queryEmployees(filter, processedOptions);
+  // Get current user info for branch filtering
+  const currentUser = req.employee || req.user;
+  const currentUserRole = currentUser?.role ?? undefined;
+  const currentUserBranchId = currentUser?.branchId ?? undefined;
+
+  const employees = await employeeService.getAllEmployeesForDropdown(
+    options,
+    currentUserRole,
+    currentUserBranchId
+  );
 
   res.status(httpStatus.OK).json({
     success: true,
     status: httpStatus.OK,
-    message: "Employees retrieved successfully",
-    data: result,
+    message: "All employees retrieved successfully",
+    data: employees,
+    total: employees.length,
   });
 });
 

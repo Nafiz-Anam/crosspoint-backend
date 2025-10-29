@@ -343,11 +343,22 @@ const getAllClientsForDropdown = async (
   options: {
     sortBy?: string;
     sortType?: "asc" | "desc";
-  } = {}
+  } = {},
+  currentUserRole?: string,
+  currentUserBranchId?: string
 ): Promise<Client[]> => {
   const { sortBy = "createdAt", sortType = "desc" } = options;
 
+  // Build where clause for branch filtering
+  let whereClause: any = {};
+
+  // Apply branch filtering for managers
+  if (currentUserRole === "MANAGER" && currentUserBranchId) {
+    whereClause.branchId = currentUserBranchId;
+  }
+
   const clients = await prisma.client.findMany({
+    where: whereClause,
     orderBy: { [sortBy]: sortType },
     include: {
       branch: {
