@@ -42,12 +42,10 @@ const getDashboardStats = catchAsync(async (req: Request, res: Response) => {
     paidInvoices,
     unpaidInvoices,
     overdueInvoices,
-    recentInvoices,
     totalClients,
     totalEmployees,
     totalBranches,
     totalServices,
-    recentTasks,
   ] = await Promise.all([
     // Total invoices in date range
     prisma.invoice.count({
@@ -86,36 +84,6 @@ const getDashboardStats = catchAsync(async (req: Request, res: Response) => {
       },
     }),
 
-    // Recent invoices for the week
-    prisma.invoice.findMany({
-      where: {
-        ...whereClause,
-        issuedDate: {
-          gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // Last 7 days
-        },
-      },
-      include: {
-        client: true,
-        branch: true,
-        employee: true,
-        items: {
-          include: {
-            service: {
-              select: {
-                id: true,
-                name: true,
-                category: true,
-              },
-            },
-          },
-        },
-      },
-      orderBy: {
-        issuedDate: "desc",
-      },
-      take: 5,
-    }),
-
     // Total clients
     prisma.client.count({
       where: whereClause.branchId ? { branchId: whereClause.branchId } : {},
@@ -131,36 +99,6 @@ const getDashboardStats = catchAsync(async (req: Request, res: Response) => {
 
     // Total services
     prisma.service.count(),
-
-    // Recent tasks
-    prisma.task.findMany({
-      where: whereClause.branchId
-        ? { client: { branchId: whereClause.branchId } }
-        : {},
-      include: {
-        client: {
-          select: {
-            name: true,
-            email: true,
-          },
-        },
-        service: {
-          select: {
-            name: true,
-          },
-        },
-        assignedEmployee: {
-          select: {
-            name: true,
-            email: true,
-          },
-        },
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-      take: 10,
-    }),
   ]);
 
   // Calculate additional metrics
@@ -217,9 +155,6 @@ const getDashboardStats = catchAsync(async (req: Request, res: Response) => {
       totalBranches,
       totalServices,
     },
-    recentInvoices,
-    invoices: recentInvoices, // Add this for the frontend
-    tasks: recentTasks, // Add this for the frontend
   };
 
   sendResponse(
