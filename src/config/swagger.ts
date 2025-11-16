@@ -96,8 +96,8 @@ const swaggerDefinition = {
           phone: { type: "string", example: "+39 02 1234567" },
           address: { type: "string", example: "Via Roma 123, Milano" },
           city: { type: "string", example: "Milano" },
-          postalCode: { type: "string", example: "20100" },
-          province: { type: "string", example: "MI" },
+          additionalPhone: { type: "string", example: "+39 02 7654321" },
+          createdBy: { type: "string", example: "John Doe" },
           isActive: { type: "boolean", example: true },
           createdAt: {
             type: "string",
@@ -118,7 +118,6 @@ const swaggerDefinition = {
           invoiceNumber: { type: "string", example: "INV-BR001-20241225-001" },
           clientId: { type: "string", example: "CUST-BR001-001" },
           amount: { type: "number", format: "float", example: 1500.75 },
-          dueDate: { type: "string", format: "date", example: "2024-12-31" },
           status: {
             type: "string",
             enum: ["PENDING", "PAID", "OVERDUE", "CANCELLED"],

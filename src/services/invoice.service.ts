@@ -16,7 +16,6 @@ interface CreateInvoiceData {
   employeeId: string; // Required field
   taskId?: string; // Optional: Link to task
   invoiceNumber?: string;
-  dueDate: Date;
   items: InvoiceItemData[];
   notes?: string;
   thanksMessage: string; // Required field
@@ -48,10 +47,10 @@ const calculateInvoiceTotals = (
   taxRate: number = 0,
   discountAmount: number = 0
 ) => {
+  // Discount is now a flat rate, not percentage
   const subTotalAmount = items.reduce((total, item) => {
-    const discountPercent = item.discount || 0;
-    const discountAmount = (item.rate * discountPercent) / 100;
-    const lineTotal = item.rate - discountAmount;
+    const discount = item.discount || 0; // Flat rate discount
+    const lineTotal = item.rate - discount;
     return total + lineTotal;
   }, 0);
 
@@ -217,12 +216,12 @@ const generateInvoiceNumber = async (): Promise<string> => {
 /**
  * Calculate individual item total
  * @param {number} rate
- * @param {number} discount
+ * @param {number} discount - Flat rate discount (not percentage)
  * @returns {number}
  */
 const calculateItemTotal = (rate: number, discount: number = 0): number => {
-  const discountAmount = (rate * discount) / 100;
-  return rate - discountAmount;
+  // Discount is now a flat rate, not percentage
+  return rate - discount;
 };
 
 /**
@@ -338,7 +337,6 @@ const createInvoice = async (
             taxAmount,
             taxRate,
             totalAmount,
-            dueDate: invoiceData.dueDate,
             status: InvoiceStatus.UNPAID,
             notes: invoiceData.notes,
             thanksMessage: invoiceData.thanksMessage,
@@ -742,7 +740,6 @@ const updateInvoiceStatus = async (
 const createInvoiceFromTask = async (
   taskId: string,
   invoiceOptions: {
-    dueDate: Date;
     notes?: string;
     thanksMessage?: string;
     paymentTerms?: string;
@@ -796,7 +793,6 @@ const createInvoiceFromTask = async (
     branchId: task.client.branchId,
     employeeId: task.assignedEmployeeId,
     taskId: task.id,
-    dueDate: invoiceOptions.dueDate,
     items: [
       {
         serviceId: task.serviceId,
@@ -1098,7 +1094,6 @@ const generateRevenueReportExcel = async (reportData: any, format: string) => {
       "Employee",
       "Status",
       "Issue Date",
-      "Due Date",
       "Subtotal",
       "Tax",
       "Discount",
@@ -1119,7 +1114,6 @@ const generateRevenueReportExcel = async (reportData: any, format: string) => {
       invoice.employee.name,
       invoice.status,
       invoice.issuedDate.toLocaleDateString(),
-      invoice.dueDate.toLocaleDateString(),
       `€${Number(invoice.subTotalAmount).toFixed(2)}`,
       `€${Number(invoice.taxAmount).toFixed(2)}`,
       `€${Number(invoice.discountAmount).toFixed(2)}`,

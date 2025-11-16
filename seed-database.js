@@ -499,6 +499,7 @@ async function seedDatabase() {
           email: `${firstName.toLowerCase()}.${lastName.toLowerCase()}@crosspoint.it`,
           name: italianNames[i],
           password: hashedPassword,
+          phone: generatePhoneNumber(),
           role: role,
           branchId: branches[i % branches.length].id,
           dateOfBirth: birthDate,
@@ -547,8 +548,8 @@ async function seedDatabase() {
             italianSurnames[Math.floor(Math.random() * italianSurnames.length)]
           } ${Math.floor(Math.random() * 200) + 1}`,
           city: city.city,
-          postalCode: city.postalCode,
-          province: city.province,
+          additionalPhone: Math.random() > 0.5 ? generatePhoneNumber() : null,
+          createdBy: Math.random() > 0.3 ? italianNames[Math.floor(Math.random() * italianNames.length)] : null,
           branchId: branches[i % branches.length].id,
         },
       });

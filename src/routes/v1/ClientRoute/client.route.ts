@@ -92,14 +92,12 @@ export default router;
  *               city:
  *                 type: string
  *                 example: "Milano"
- *               postalCode:
+ *               additionalPhone:
  *                 type: string
- *                 pattern: "^\\d{5}$"
- *                 example: "20100"
- *               province:
+ *                 example: "+39 02 7654321"
+ *               createdBy:
  *                 type: string
- *                 pattern: "^[A-Z]{2}$"
- *                 example: "MI"
+ *                 example: "John Doe"
  *     responses:
  *       201:
  *         description: Client created

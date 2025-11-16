@@ -15,8 +15,8 @@ const createClient = catchAsync(async (req, res) => {
     phone,
     address,
     city,
-    postalCode,
-    province,
+    additionalPhone,
+    createdBy,
   } = req.body;
 
   const client = await clientService.createClient(
@@ -27,8 +27,8 @@ const createClient = catchAsync(async (req, res) => {
     phone,
     address,
     city,
-    postalCode,
-    province
+    additionalPhone,
+    createdBy
   );
 
   sendResponse(

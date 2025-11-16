@@ -90,8 +90,8 @@ const createClient = async (
   phone?: string,
   address?: string,
   city?: string,
-  postalCode?: string,
-  province?: string
+  additionalPhone?: string,
+  createdBy?: string
 ): Promise<Client> => {
   // Check if client with same email already exists
   const existingClient = await prisma.client.findUnique({
@@ -138,8 +138,8 @@ const createClient = async (
       phone,
       address,
       city,
-      postalCode,
-      province: province?.toUpperCase(),
+      additionalPhone,
+      createdBy,
       branchId,
       clientId,
     },

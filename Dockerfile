@@ -2,7 +2,7 @@ FROM node:20.16.0-alpine
 
 # Install pnpm and dependencies
 RUN npm install -g pnpm
-RUN apk add --no-cache openssl tzdata
+RUN apk add --no-cache openssl tzdata postgresql15-client
 
 # Set timezone to Italian timezone
 ENV TZ=Europe/Rome
@@ -27,9 +27,6 @@ RUN pnpm prisma generate
 
 # Build the app
 RUN pnpm build
-
-# Install postgresql-client for pg_isready
-RUN apk add --no-cache postgresql-client
 
 # Make startup script executable
 RUN chmod +x startup.sh

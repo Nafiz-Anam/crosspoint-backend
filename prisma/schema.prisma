@@ -102,8 +102,8 @@ model Client {
   phone                        String?
   address                      String?
   city                         String? // Italian city
-  postalCode                   String? // Italian postal code (CAP)
-  province                     String? // Italian province (2-letter code)
+  additionalPhone               String? // Optional additional phone number
+  createdBy                    String? // Created by field
   branchId                     String
   branch                       Branch    @relation(fields: [branchId], references: [id])
   // Removed status field - not used for clients
@@ -129,7 +129,6 @@ model Invoice {
   taxAmount      Float
   taxRate        Float
   status         InvoiceStatus @default(UNPAID)
-  dueDate        DateTime
   issuedDate     DateTime      @default(now())
   branchId       String
   branch         Branch        @relation(fields: [branchId], references: [id])

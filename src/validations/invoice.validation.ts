@@ -8,7 +8,6 @@ const createInvoice = {
     branchId: Joi.string().required().custom(objectId),
     employeeId: Joi.string().required().custom(objectId),
     invoiceNumber: Joi.string().optional().allow("", null),
-    dueDate: Joi.date().required(),
     thanksMessage: Joi.string().required().min(1),
     notes: Joi.string().optional().allow("", null),
     paymentTerms: Joi.string().optional().allow("", null),
@@ -38,7 +37,7 @@ const createInvoice = {
       .items(
         Joi.object().keys({
           serviceId: Joi.string().required().custom(objectId),
-          description: Joi.string().required().min(1),
+          description: Joi.string().optional().allow("", null),
           rate: Joi.number().required().min(0),
           discount: Joi.number().optional().min(0),
         })
@@ -79,7 +78,6 @@ const updateInvoice = {
       branchId: Joi.string().custom(objectId),
       employeeId: Joi.string().custom(objectId),
       invoiceNumber: Joi.string(),
-      dueDate: Joi.date(),
       status: Joi.string().valid(...Object.values(InvoiceStatus)),
       notes: Joi.string().allow("", null),
       thanksMessage: Joi.string().min(1),
@@ -109,12 +107,12 @@ const updateInvoice = {
       // Invoice Items
       items: Joi.array()
         .items(
-          Joi.object().keys({
-            serviceId: Joi.string().required().custom(objectId),
-            description: Joi.string().required().min(1),
-            rate: Joi.number().required().min(0),
-            discount: Joi.number().optional().min(0),
-          })
+        Joi.object().keys({
+          serviceId: Joi.string().required().custom(objectId),
+          description: Joi.string().optional().allow("", null),
+          rate: Joi.number().required().min(0),
+          discount: Joi.number().optional().min(0),
+        })
         )
         .optional()
         .min(1),

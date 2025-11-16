@@ -88,7 +88,7 @@ async function createAdminUser() {
         name: "Admin User",
         password: hashedPassword,
         role: "ADMIN",
-        phone: "01717171717",
+        // phone field removed - doesn't exist in database yet
         nationalIdentificationNumber: "ADMIN001", // Admin national ID
         dateOfBirth: new Date("1990-01-01"), // Default date of birth
         isEmailVerified: true,

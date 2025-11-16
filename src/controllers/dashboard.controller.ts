@@ -495,7 +495,6 @@ const getProjectsOverview = catchAsync(async (req: Request, res: Response) => {
     status: getProjectStatusFromInvoice(invoice.status),
     avatar: null, // You can add avatar logic here
     totalAmount: invoice.totalAmount,
-    dueDate: invoice.dueDate,
     client: invoice.client,
     branch: invoice.branch,
   }));

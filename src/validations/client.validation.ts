@@ -9,8 +9,8 @@ const createClient = {
     phone: Joi.string().optional().allow(null, ""),
     address: Joi.string().optional().allow(null, "").max(500),
     city: Joi.string().optional().allow(null, "").max(100),
-    postalCode: Joi.string().optional().allow(null, "").max(20),
-    province: Joi.string().optional().allow(null, "").length(2).uppercase(), // 2-letter Italian province code
+    additionalPhone: Joi.string().optional().allow(null, "").max(20),
+    createdBy: Joi.string().optional().allow(null, "").max(100),
     branchId: Joi.string().required().custom(objectId),
     status: Joi.string()
       .valid("ACTIVE", "PENDING", "PROCESSING", "CANCELLED", "COMPLETED")
@@ -26,7 +26,8 @@ const getClients = {
     email: Joi.string(),
     phone: Joi.string(),
     city: Joi.string(),
-    province: Joi.string().length(2).uppercase(),
+    additionalPhone: Joi.string().optional(),
+    createdBy: Joi.string().optional(),
     branchId: Joi.string().custom(objectId),
     status: Joi.string().valid(
       "ACTIVE",
@@ -60,8 +61,8 @@ const updateClient = {
       phone: Joi.string().allow(null, ""),
       address: Joi.string().allow(null, "").max(500),
       city: Joi.string().allow(null, "").max(100),
-      postalCode: Joi.string().allow(null, "").max(20),
-      province: Joi.string().allow(null, "").length(2).uppercase(),
+      additionalPhone: Joi.string().allow(null, "").max(20),
+      createdBy: Joi.string().allow(null, "").max(100),
       branchId: Joi.string().custom(objectId),
       status: Joi.string().valid(
         "ACTIVE",

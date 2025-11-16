@@ -15,13 +15,11 @@ const checkOverdueInvoices = async () => {
     const today = new Date();
     today.setHours(23, 59, 59, 999); // End of today
 
-    // Find all unpaid invoices where due date has passed
+    // Find all unpaid invoices (due date removed - no overdue tracking)
     const overdueInvoices = await prisma.invoice.findMany({
       where: {
         status: InvoiceStatus.UNPAID,
-        dueDate: {
-          lt: today,
-        },
+        // Due date removed - no overdue tracking
       },
       include: {
         client: {
@@ -88,7 +86,6 @@ const sendOverdueNotification = async (invoice: any) => {
     // Prepare email content
     const clientName = invoice.client.name;
     const invoiceNumber = invoice.invoiceNumber;
-    const dueDate = new Date(invoice.dueDate).toLocaleDateString();
     const totalAmount = invoice.totalAmount;
     const branchName = invoice.branch.name;
 
@@ -101,7 +98,6 @@ This is to inform you that your invoice ${invoiceNumber} is now overdue.
 
 Invoice Details:
 - Invoice Number: ${invoiceNumber}
-- Due Date: ${dueDate}
 - Total Amount: $${totalAmount.toFixed(2)}
 - Branch: ${branchName}
 
@@ -122,7 +118,6 @@ An invoice has been automatically marked as overdue:
 
 Client: ${clientName}
 Invoice Number: ${invoiceNumber}
-Due Date: ${dueDate}
 Total Amount: $${totalAmount.toFixed(2)}
 Branch: ${branchName}
 Assigned Employee: ${invoice.employee.name}

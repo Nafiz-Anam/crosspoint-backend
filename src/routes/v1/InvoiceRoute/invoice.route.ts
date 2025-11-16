@@ -116,7 +116,6 @@ export default router;
  *               - branchId
  *               - employeeId
  *               - thanksMessage
- *               - dueDate
  *               - items
  *             properties:
  *               clientId:
@@ -131,10 +130,6 @@ export default router;
  *               invoiceNumber:
  *                 type: string
  *                 example: "INV-202409-0001"
- *               dueDate:
- *                 type: string
- *                 format: date
- *                 example: "2024-12-31"
  *               thanksMessage:
  *                 type: string
  *                 example: "Thank you for your business"
@@ -472,10 +467,6 @@ export default router;
  *           schema:
  *             type: object
  *             properties:
- *               dueDate:
- *                 type: string
- *                 format: date
- *                 example: "2024-12-31"
  *               notes:
  *                 type: string
  *                 example: "Updated notes"
@@ -605,10 +596,6 @@ export default router;
  *           type: string
  *           enum: [UNPAID, PAID, OVERDUE, CANCELLED]
  *           example: UNPAID
- *         dueDate:
- *           type: string
- *           format: date-time
- *           example: "2024-12-31T00:00:00.000Z"
  *         issuedDate:
  *           type: string
  *           format: date-time

@@ -13,7 +13,6 @@ const createInvoice = catchAsync(async (req, res) => {
     branchId,
     employeeId,
     invoiceNumber,
-    dueDate,
     items,
     notes,
     thanksMessage,
@@ -51,10 +50,10 @@ const createInvoice = catchAsync(async (req, res) => {
 
   // Validate each item has required fields
   for (const item of items) {
-    if (!item.serviceId || !item.description || !item.rate) {
+    if (!item.serviceId || !item.rate) {
       throw new ApiError(
         httpStatus.BAD_REQUEST,
-        "Each item must have serviceId, description, and rate"
+        "Each item must have serviceId and rate"
       );
     }
   }
@@ -64,7 +63,6 @@ const createInvoice = catchAsync(async (req, res) => {
     branchId,
     employeeId,
     invoiceNumber,
-    dueDate: new Date(dueDate),
     items,
     notes,
     thanksMessage,
@@ -168,10 +166,6 @@ const updateInvoice = catchAsync(async (req, res) => {
     throw new ApiError(httpStatus.BAD_REQUEST, "Invoice ID is required");
   }
 
-  // If dueDate is being updated, convert to Date
-  if (updateData.dueDate) {
-    updateData.dueDate = new Date(updateData.dueDate);
-  }
 
   // Validate status if being updated
   if (
@@ -353,11 +347,7 @@ const getInvoiceStats = catchAsync(async (req, res) => {
     unpaidInvoices: invoices.filter(
       (inv) => inv.status === InvoiceStatus.UNPAID
     ).length,
-    overdueInvoices: invoices.filter(
-      (inv) =>
-        inv.status === InvoiceStatus.UNPAID &&
-        new Date(inv.dueDate) < new Date()
-    ).length,
+    overdueInvoices: 0, // Due date removed - no overdue tracking
     statusBreakdown: {
       [InvoiceStatus.PAID]: invoices.filter(
         (inv) => inv.status === InvoiceStatus.PAID
@@ -394,7 +384,6 @@ const checkOverdueInvoices = catchAsync(async (req, res) => {
 const createInvoiceFromTask = catchAsync(async (req, res) => {
   const { taskId } = req.params;
   const {
-    dueDate,
     notes,
     thanksMessage,
     paymentTerms,
@@ -404,12 +393,7 @@ const createInvoiceFromTask = catchAsync(async (req, res) => {
     bankAccountId,
   } = req.body;
 
-  if (!dueDate) {
-    throw new ApiError(httpStatus.BAD_REQUEST, "Due date is required");
-  }
-
   const invoice = await invoiceService.createInvoiceFromTask(taskId, {
-    dueDate: new Date(dueDate),
     notes,
     thanksMessage,
     paymentTerms,
