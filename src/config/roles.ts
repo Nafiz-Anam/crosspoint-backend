@@ -1,130 +1,92 @@
 import { Role, Permission } from "@prisma/client";
 
+// Shared permissions for ADMIN, MANAGER, and HR - they have the same power, only labels differ
+const adminManagerHrPermissions = [
+  // Employee Management
+  Permission.CREATE_EMPLOYEE,
+  Permission.READ_EMPLOYEE,
+  Permission.UPDATE_EMPLOYEE,
+  Permission.DELETE_EMPLOYEE,
+  Permission.MANAGE_EMPLOYEES,
+
+  // Client Management
+  Permission.CREATE_CLIENT,
+  Permission.READ_CLIENT,
+  Permission.UPDATE_CLIENT,
+  Permission.DELETE_CLIENT,
+
+  // Task Management
+  Permission.CREATE_TASK,
+  Permission.READ_TASK,
+  Permission.UPDATE_TASK,
+  Permission.DELETE_TASK,
+  Permission.ASSIGN_TASK,
+
+  // Branch Management
+  Permission.CREATE_BRANCH,
+  Permission.READ_BRANCH,
+  Permission.UPDATE_BRANCH,
+  Permission.DELETE_BRANCH,
+
+  // Service Management
+  Permission.CREATE_SERVICE,
+  Permission.READ_SERVICE,
+  Permission.UPDATE_SERVICE,
+  Permission.DELETE_SERVICE,
+
+  // Payment Methods Management
+  Permission.CREATE_PAYMENT_METHOD,
+  Permission.READ_PAYMENT_METHOD,
+  Permission.UPDATE_PAYMENT_METHOD,
+  Permission.DELETE_PAYMENT_METHOD,
+
+  // Invoice Management
+  Permission.CREATE_INVOICE,
+  Permission.READ_INVOICE,
+  Permission.UPDATE_INVOICE,
+  Permission.DELETE_INVOICE,
+
+  // Bank Account Management
+  Permission.CREATE_BANK_ACCOUNT,
+  Permission.READ_BANK_ACCOUNT,
+  Permission.UPDATE_BANK_ACCOUNT,
+  Permission.DELETE_BANK_ACCOUNT,
+
+  // Report Management
+  Permission.GENERATE_REPORTS,
+  Permission.VIEW_REPORTS,
+];
+
 // Define permissions for each role
 const allRoles = {
   [Role.ADMIN]: [
-    // Admin has ALL permissions
+    // Admin has ALL permissions (same as MANAGER and HR, plus ASSIGN_PERMISSIONS)
     Permission.ASSIGN_PERMISSIONS,
-
-    // Employee Management
-    Permission.CREATE_EMPLOYEE,
-    Permission.READ_EMPLOYEE,
-    Permission.UPDATE_EMPLOYEE,
-    Permission.DELETE_EMPLOYEE,
-    Permission.MANAGE_EMPLOYEES,
-
-    // Client Management
-    Permission.CREATE_CLIENT,
-    Permission.READ_CLIENT,
-    Permission.UPDATE_CLIENT,
-    Permission.DELETE_CLIENT,
-
-    // Task Management
-    Permission.CREATE_TASK,
-    Permission.READ_TASK,
-    Permission.UPDATE_TASK,
-    Permission.DELETE_TASK,
-    Permission.ASSIGN_TASK,
-
-    // Branch Management
-    Permission.CREATE_BRANCH,
-    Permission.READ_BRANCH,
-    Permission.UPDATE_BRANCH,
-    Permission.DELETE_BRANCH,
-
-    // Service Management
-    Permission.CREATE_SERVICE,
-    Permission.READ_SERVICE,
-    Permission.UPDATE_SERVICE,
-    Permission.DELETE_SERVICE,
-
-    // Payment Methods Management
-    Permission.CREATE_PAYMENT_METHOD,
-    Permission.READ_PAYMENT_METHOD,
-    Permission.UPDATE_PAYMENT_METHOD,
-    Permission.DELETE_PAYMENT_METHOD,
-
-    // Invoice Management
-    Permission.CREATE_INVOICE,
-    Permission.READ_INVOICE,
-    Permission.UPDATE_INVOICE,
-    Permission.DELETE_INVOICE,
-
-    // Bank Account Management
-    Permission.CREATE_BANK_ACCOUNT,
-    Permission.READ_BANK_ACCOUNT,
-    Permission.UPDATE_BANK_ACCOUNT,
-    Permission.DELETE_BANK_ACCOUNT,
-
-    // Report Management
-    Permission.GENERATE_REPORTS,
-    Permission.VIEW_REPORTS,
+    ...adminManagerHrPermissions,
   ],
   [Role.HR]: [
-    // Employee Management
-    Permission.CREATE_EMPLOYEE,
-    Permission.READ_EMPLOYEE,
-    Permission.UPDATE_EMPLOYEE,
-    Permission.DELETE_EMPLOYEE,
-    Permission.MANAGE_EMPLOYEES,
-
-    // Service Management
-    Permission.CREATE_SERVICE,
-    Permission.READ_SERVICE,
-    Permission.UPDATE_SERVICE,
-    Permission.DELETE_SERVICE,
-
-    // Client Management
-    Permission.CREATE_CLIENT,
-    Permission.READ_CLIENT,
-    Permission.UPDATE_CLIENT,
-    Permission.DELETE_CLIENT,
-
-    // Invoice Management
-    Permission.CREATE_INVOICE,
-    Permission.READ_INVOICE,
-    Permission.UPDATE_INVOICE,
-    Permission.DELETE_INVOICE,
-
-    // Bank Account Management
-    Permission.CREATE_BANK_ACCOUNT,
-    Permission.READ_BANK_ACCOUNT,
-    Permission.UPDATE_BANK_ACCOUNT,
-    Permission.DELETE_BANK_ACCOUNT,
-
-    // Payment Methods Management
-    Permission.CREATE_PAYMENT_METHOD,
-    Permission.READ_PAYMENT_METHOD,
-    Permission.UPDATE_PAYMENT_METHOD,
-    Permission.DELETE_PAYMENT_METHOD,
-
-    // Report Management
-    Permission.GENERATE_REPORTS,
-    Permission.VIEW_REPORTS,
-
-    // NOTE: HR does NOT have access to:
-    // - Task Management (CREATE_TASK, READ_TASK, UPDATE_TASK, DELETE_TASK, ASSIGN_TASK)
-    // - Branch Management (CREATE_BRANCH, READ_BRANCH, UPDATE_BRANCH, DELETE_BRANCH)
+    // HR has same permissions as ADMIN and MANAGER (only label differs)
+    ...adminManagerHrPermissions,
   ],
   [Role.EMPLOYEE]: [
-    // Client Management
+    // Client Management (NO DELETE - employees cannot delete anything)
     Permission.CREATE_CLIENT,
     Permission.READ_CLIENT,
     Permission.UPDATE_CLIENT,
-    Permission.DELETE_CLIENT,
+    // Permission.DELETE_CLIENT, // REMOVED - employees cannot delete
 
-    // Task Management
+    // Task Management (NO DELETE - employees cannot delete anything)
     Permission.CREATE_TASK,
     Permission.READ_TASK,
     Permission.UPDATE_TASK,
-    Permission.DELETE_TASK,
+    // Permission.DELETE_TASK, // REMOVED - employees cannot delete
     Permission.ASSIGN_TASK,
 
-    // Invoice Management
+    // Invoice Management (NO DELETE - employees cannot delete anything)
     Permission.CREATE_INVOICE,
     Permission.READ_INVOICE,
     Permission.UPDATE_INVOICE,
-    Permission.DELETE_INVOICE,
+    // Permission.DELETE_INVOICE, // REMOVED - employees cannot delete
 
     // Service Management (read-only for invoice functionality)
     Permission.READ_SERVICE,
@@ -142,9 +104,9 @@ const allRoles = {
     Permission.VIEW_REPORTS,
 
     // NOTE: Employee has access to:
-    // - Client Management (full access)
-    // - Task Management (full access)
-    // - Invoice Management (full access)
+    // - Client Management (CREATE, READ, UPDATE - NO DELETE)
+    // - Task Management (CREATE, READ, UPDATE, ASSIGN - NO DELETE)
+    // - Invoice Management (CREATE, READ, UPDATE - NO DELETE)
     // - Service Management (read-only for invoice items)
     // - Bank Account Management (read-only for payment selection)
     // - Employee Management (read-only for assignment)
@@ -152,57 +114,15 @@ const allRoles = {
     // - View Reports (read-only)
     //
     // Employee does NOT have access to:
+    // - DELETE operations for ANY module (Tasks, Invoices, Clients, etc.)
     // - CREATE/UPDATE/DELETE for Service, Bank Account, Employee, Branch
     // - Payment Methods Management
     // - Generate Reports
     // - Assign Permissions
   ],
   [Role.MANAGER]: [
-    // Employee Management
-    Permission.CREATE_EMPLOYEE,
-    Permission.READ_EMPLOYEE,
-    Permission.UPDATE_EMPLOYEE,
-    Permission.DELETE_EMPLOYEE,
-    Permission.MANAGE_EMPLOYEES,
-
-    // Client Management
-    Permission.CREATE_CLIENT,
-    Permission.READ_CLIENT,
-    Permission.UPDATE_CLIENT,
-    Permission.DELETE_CLIENT,
-
-    // Task Management
-    Permission.CREATE_TASK,
-    Permission.READ_TASK,
-    Permission.UPDATE_TASK,
-    Permission.DELETE_TASK,
-    Permission.ASSIGN_TASK,
-
-    // Invoice Management
-    Permission.CREATE_INVOICE,
-    Permission.READ_INVOICE,
-    Permission.UPDATE_INVOICE,
-    Permission.DELETE_INVOICE,
-
-    // Bank Account Management
-    Permission.CREATE_BANK_ACCOUNT,
-    Permission.READ_BANK_ACCOUNT,
-    Permission.UPDATE_BANK_ACCOUNT,
-    Permission.DELETE_BANK_ACCOUNT,
-
-    // Service Management
-    Permission.CREATE_SERVICE,
-    Permission.READ_SERVICE,
-    Permission.UPDATE_SERVICE,
-    Permission.DELETE_SERVICE,
-
-    // Report Management
-    Permission.GENERATE_REPORTS,
-    Permission.VIEW_REPORTS,
-
-    // NOTE: Manager does NOT have access to:
-    // - Branch Management (CREATE_BRANCH, READ_BRANCH, UPDATE_BRANCH, DELETE_BRANCH)
-    // - Payment Methods Management (CREATE_PAYMENT_METHOD, READ_PAYMENT_METHOD, UPDATE_PAYMENT_METHOD, DELETE_PAYMENT_METHOD)
+    // MANAGER has same permissions as ADMIN and HR (only label differs)
+    ...adminManagerHrPermissions,
   ],
 };
 
