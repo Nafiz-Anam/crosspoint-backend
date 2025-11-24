@@ -933,6 +933,7 @@ const getRevenueReportData = async (
     status?: InvoiceStatus;
     startDate?: Date;
     endDate?: Date;
+    search?: string;
   },
   currentUserRole?: string,
   currentUserBranchId?: string
@@ -969,6 +970,18 @@ const getRevenueReportData = async (
     }
   }
 
+  // Apply search filter
+  if (filters.search) {
+    whereClause.OR = [
+      { invoiceNumber: { contains: filters.search, mode: "insensitive" as const } },
+      { invoiceId: { contains: filters.search, mode: "insensitive" as const } },
+      { client: { name: { contains: filters.search, mode: "insensitive" as const } } },
+      { client: { email: { contains: filters.search, mode: "insensitive" as const } } },
+      { employee: { name: { contains: filters.search, mode: "insensitive" as const } } },
+      { branch: { name: { contains: filters.search, mode: "insensitive" as const } } },
+    ];
+  }
+
   // Get invoices with all related data
   const invoices = await prisma.invoice.findMany({
     where: whereClause,
@@ -993,6 +1006,15 @@ const getRevenueReportData = async (
           id: true,
           name: true,
           email: true,
+        },
+      },
+      bankAccount: {
+        select: {
+          id: true,
+          bankName: true,
+          accountNumber: true,
+          bankIban: true,
+          accountName: true,
         },
       },
       items: {
@@ -1089,16 +1111,30 @@ const generateRevenueReportExcel = async (reportData: any, format: string) => {
   const invoiceData = [
     [
       "Invoice Number",
+      "Invoice ID",
       "Client Name",
+      "Client Email",
+      "Client Phone",
       "Branch",
-      "Employee",
+      "Employee Name",
+      "Employee Email",
       "Status",
       "Issue Date",
+      "Created At",
+      "Payment Method",
+      "Bank Account",
+      "Bank IBAN",
+      "Payment Terms",
+      "Tax Rate (%)",
       "Subtotal",
-      "Tax",
-      "Discount",
+      "Tax Amount",
+      "Discount Amount",
       "Total Amount",
       "Services",
+      "Service Categories",
+      "Items Count",
+      "Notes",
+      "Thanks Message",
     ],
   ];
 
@@ -1106,19 +1142,38 @@ const generateRevenueReportExcel = async (reportData: any, format: string) => {
     const services = invoice.items
       .map((item: any) => `${item.service.name} (€${item.rate})`)
       .join("; ");
+    
+    const serviceCategories = invoice.items
+      .map((item: any) => item.service.category)
+      .filter((cat: string, index: number, arr: string[]) => arr.indexOf(cat) === index)
+      .join("; ");
 
     invoiceData.push([
-      invoice.invoiceNumber,
-      invoice.client.name,
-      invoice.branch.name,
-      invoice.employee.name,
-      invoice.status,
-      invoice.issuedDate.toLocaleDateString(),
-      `€${Number(invoice.subTotalAmount).toFixed(2)}`,
-      `€${Number(invoice.taxAmount).toFixed(2)}`,
-      `€${Number(invoice.discountAmount).toFixed(2)}`,
-      `€${Number(invoice.totalAmount).toFixed(2)}`,
-      services,
+      invoice.invoiceNumber || "",
+      invoice.invoiceId || "",
+      invoice.client?.name || "",
+      invoice.client?.email || "",
+      invoice.client?.phone || "",
+      invoice.branch?.name || "",
+      invoice.employee?.name || "",
+      invoice.employee?.email || "",
+      invoice.status || "",
+      invoice.issuedDate ? new Date(invoice.issuedDate).toLocaleDateString() : "",
+      invoice.createdAt ? new Date(invoice.createdAt).toLocaleDateString() : "",
+      invoice.paymentMethod || "",
+      invoice.bankAccount?.bankName ? `${invoice.bankAccount.bankName} - ${invoice.bankAccount.accountNumber || ""}` : "",
+      invoice.bankAccount?.bankIban || "",
+      invoice.paymentTerms || "",
+      invoice.taxRate ? `${Number(invoice.taxRate).toFixed(2)}%` : "0%",
+      `€${Number(invoice.subTotalAmount || 0).toFixed(2)}`,
+      `€${Number(invoice.taxAmount || 0).toFixed(2)}`,
+      `€${Number(invoice.discountAmount || 0).toFixed(2)}`,
+      `€${Number(invoice.totalAmount || 0).toFixed(2)}`,
+      services || "",
+      serviceCategories || "",
+      invoice.items?.length || 0,
+      invoice.notes || "",
+      invoice.thanksMessage || "",
     ]);
   });
 

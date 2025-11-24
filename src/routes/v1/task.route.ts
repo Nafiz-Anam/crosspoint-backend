@@ -37,6 +37,29 @@ router
     taskController.getTasks
   );
 
+// Specific routes must come before parameterized routes
+router
+  .route("/export-report")
+  .get(
+    requirePermission(Permission.READ_TASK),
+    taskController.exportTaskReport
+  );
+
+router
+  .route("/check-deadlines")
+  .post(
+    requirePermission(Permission.READ_TASK),
+    taskController.checkTaskDeadlines
+  );
+
+router
+  .route("/client/:clientId")
+  .get(
+    requirePermission(Permission.READ_TASK),
+    validate(taskValidation.getTasksByClient.params, "params"),
+    taskController.getTasksByClient
+  );
+
 router
   .route("/:taskId")
   .get(
@@ -54,21 +77,6 @@ router
     requirePermission(Permission.DELETE_TASK),
     validate(taskValidation.deleteTask.params, "params"),
     taskController.deleteTask
-  );
-
-router
-  .route("/client/:clientId")
-  .get(
-    requirePermission(Permission.READ_TASK),
-    validate(taskValidation.getTasksByClient.params, "params"),
-    taskController.getTasksByClient
-  );
-
-router
-  .route("/check-deadlines")
-  .post(
-    requirePermission(Permission.READ_TASK),
-    taskController.checkTaskDeadlines
   );
 
 export default router;

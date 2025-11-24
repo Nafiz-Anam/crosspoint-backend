@@ -685,6 +685,244 @@ const getTasksWithPagination = async (
   };
 };
 
+/**
+ * Get task report data with summary and detailed tasks
+ * @param {Object} filters - Filter options
+ * @param {string} currentUserRole - Current user's role
+ * @param {string} currentUserBranchId - Current user's branch ID
+ * @returns {Promise<Object>}
+ */
+const getTaskReportData = async (
+  filters: {
+    branchId?: string;
+    clientId?: string;
+    employeeId?: string;
+    status?: TaskStatus;
+    startDate?: Date;
+    endDate?: Date;
+    search?: string;
+  },
+  currentUserRole?: string,
+  currentUserBranchId?: string
+) => {
+  // Build where clause
+  let whereClause: any = {};
+
+  // Apply branch filtering for managers
+  if (currentUserRole === "MANAGER" && currentUserBranchId) {
+    whereClause.client = {
+      ...whereClause.client,
+      branchId: currentUserBranchId,
+    };
+  } else if (filters.branchId) {
+    whereClause.client = {
+      ...whereClause.client,
+      branchId: filters.branchId,
+    };
+  }
+
+  if (filters.clientId) {
+    whereClause.clientId = filters.clientId;
+  }
+
+  if (filters.employeeId) {
+    whereClause.assignedEmployeeId = filters.employeeId;
+  }
+
+  if (filters.status) {
+    whereClause.status = filters.status;
+  }
+
+  if (filters.startDate || filters.endDate) {
+    whereClause.startDate = {};
+    if (filters.startDate) {
+      whereClause.startDate.gte = filters.startDate;
+    }
+    if (filters.endDate) {
+      whereClause.startDate.lte = filters.endDate;
+    }
+  }
+
+  // Apply search filter
+  if (filters.search) {
+    whereClause.OR = [
+      { title: { contains: filters.search, mode: "insensitive" as const } },
+      { description: { contains: filters.search, mode: "insensitive" as const } },
+      { client: { name: { contains: filters.search, mode: "insensitive" as const } } },
+      { service: { name: { contains: filters.search, mode: "insensitive" as const } } },
+      {
+        assignedEmployee: {
+          name: { contains: filters.search, mode: "insensitive" as const },
+        },
+      },
+    ];
+  }
+
+  // Get tasks with all related data
+  const tasks = await prisma.task.findMany({
+    where: whereClause,
+    include: {
+      client: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phone: true,
+          branch: {
+            select: {
+              id: true,
+              name: true,
+              city: true,
+            },
+          },
+        },
+      },
+      assignedEmployee: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      },
+      service: {
+        select: {
+          id: true,
+          name: true,
+          category: true,
+          price: true,
+        },
+      },
+      invoices: {
+        select: {
+          id: true,
+          invoiceId: true,
+          status: true,
+          totalAmount: true,
+        },
+      },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  // Calculate summary statistics
+  const summary = {
+    totalTasks: tasks.length,
+    pendingTasks: tasks.filter((task) => task.status === "PENDING").length,
+    inProgressTasks: tasks.filter((task) => task.status === "IN_PROGRESS").length,
+    completedTasks: tasks.filter((task) => task.status === "COMPLETED").length,
+    cancelledTasks: tasks.filter((task) => task.status === "CANCELLED").length,
+    onHoldTasks: tasks.filter((task) => task.status === "ON_HOLD").length,
+    tasksWithInvoices: tasks.filter((task) => task.invoices && task.invoices.length > 0).length,
+    totalInvoiceAmount: tasks.reduce((sum, task) => {
+      const invoiceTotal = task.invoices?.reduce((invSum, inv) => invSum + Number(inv.totalAmount || 0), 0) || 0;
+      return sum + invoiceTotal;
+    }, 0),
+    statusBreakdown: {
+      PENDING: tasks.filter((task) => task.status === "PENDING").length,
+      IN_PROGRESS: tasks.filter((task) => task.status === "IN_PROGRESS").length,
+      COMPLETED: tasks.filter((task) => task.status === "COMPLETED").length,
+      CANCELLED: tasks.filter((task) => task.status === "CANCELLED").length,
+      ON_HOLD: tasks.filter((task) => task.status === "ON_HOLD").length,
+    },
+  };
+
+  return {
+    tasks,
+    summary,
+    filters,
+    generatedAt: new Date(),
+  };
+};
+
+/**
+ * Generate Excel report for tasks
+ * @param {Object} reportData - Report data from getTaskReportData
+ * @param {string} format - Format type (excel or csv)
+ * @returns {Promise<Buffer>}
+ */
+const generateTaskReportExcel = async (reportData: any, format: string) => {
+  const XLSX = require("xlsx");
+
+  // Create workbook
+  const workbook = XLSX.utils.book_new();
+
+  // Summary sheet
+  const summaryData = [
+    ["Task Management Report Summary"],
+    [""],
+    ["Generated At:", reportData.generatedAt.toLocaleString()],
+    [""],
+    ["Total Tasks:", reportData.summary.totalTasks],
+    [""],
+    ["Status Breakdown:"],
+    ["Pending:", reportData.summary.statusBreakdown.PENDING],
+    ["In Progress:", reportData.summary.statusBreakdown.IN_PROGRESS],
+    ["Completed:", reportData.summary.statusBreakdown.COMPLETED],
+    ["Cancelled:", reportData.summary.statusBreakdown.CANCELLED],
+    ["On Hold:", reportData.summary.statusBreakdown.ON_HOLD],
+    [""],
+    ["Additional Statistics:"],
+    ["Tasks with Invoices:", reportData.summary.tasksWithInvoices],
+    ["Total Invoice Amount:", `€${reportData.summary.totalInvoiceAmount.toFixed(2)}`],
+  ];
+
+  const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
+  XLSX.utils.book_append_sheet(workbook, summarySheet, "Summary");
+
+  // Detailed tasks sheet
+  const taskData = [
+    [
+      "Task ID",
+      "Title",
+      "Description",
+      "Client Name",
+      "Client Email",
+      "Branch",
+      "Service",
+      "Service Category",
+      "Service Price",
+      "Assigned Employee",
+      "Status",
+      "Start Date",
+      "Due Date",
+      "Created At",
+      "Invoices Count",
+      "Total Invoice Amount",
+    ],
+  ];
+
+  reportData.tasks.forEach((task: any) => {
+    const invoiceCount = task.invoices?.length || 0;
+    const invoiceTotal = task.invoices?.reduce((sum: number, inv: any) => sum + Number(inv.totalAmount || 0), 0) || 0;
+
+    taskData.push([
+      task.taskId || task.id,
+      task.title || "",
+      task.description || "",
+      task.client?.name || "",
+      task.client?.email || "",
+      task.client?.branch?.name || "",
+      task.service?.name || "",
+      task.service?.category || "",
+      task.service?.price ? `€${Number(task.service.price).toFixed(2)}` : "",
+      task.assignedEmployee?.name || "",
+      task.status || "",
+      task.startDate ? new Date(task.startDate).toLocaleDateString() : "",
+      task.dueDate ? new Date(task.dueDate).toLocaleDateString() : "",
+      task.createdAt ? new Date(task.createdAt).toLocaleDateString() : "",
+      invoiceCount,
+      `€${invoiceTotal.toFixed(2)}`,
+    ]);
+  });
+
+  const taskSheet = XLSX.utils.aoa_to_sheet(taskData);
+  XLSX.utils.book_append_sheet(workbook, taskSheet, "Tasks");
+
+  // Generate buffer
+  const buffer = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
+  return buffer;
+};
+
 export {
   createTask,
   queryTasks,
@@ -694,4 +932,6 @@ export {
   deleteTaskById,
   getTasksByClientId,
   getTaskStatistics,
+  getTaskReportData,
+  generateTaskReportExcel,
 };

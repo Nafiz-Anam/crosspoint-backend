@@ -262,6 +262,59 @@ const checkTaskDeadlines = catchAsync(async (req, res) => {
   );
 });
 
+const exportTaskReport = catchAsync(async (req, res) => {
+  const {
+    branchId,
+    clientId,
+    employeeId,
+    status,
+    startDate,
+    endDate,
+    search,
+    format = "excel",
+  } = req.query;
+
+  const currentUserRole = req.user?.role;
+  const currentUserBranchId = req.user?.branchId || undefined;
+
+  // Get task report data
+  const reportData = await taskService.getTaskReportData(
+    {
+      branchId: branchId as string,
+      clientId: clientId as string,
+      employeeId: employeeId as string,
+      status: status as TaskStatus,
+      startDate: startDate ? new Date(startDate as string) : undefined,
+      endDate: endDate ? new Date(endDate as string) : undefined,
+      search: search as string,
+    },
+    currentUserRole,
+    currentUserBranchId
+  );
+
+  // Generate Excel file
+  const excelBuffer = await taskService.generateTaskReportExcel(
+    reportData,
+    format as string
+  );
+
+  // Set response headers for file download
+  const filename = `task-report-${new Date().toISOString().split("T")[0]}.${
+    format === "excel" ? "xlsx" : "csv"
+  }`;
+
+  res.setHeader(
+    "Content-Type",
+    format === "excel"
+      ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      : "text/csv"
+  );
+  res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+  res.setHeader("Content-Length", excelBuffer.length);
+
+  res.send(excelBuffer);
+});
+
 export {
   createTask,
   getTasks,
@@ -271,4 +324,5 @@ export {
   getTasksByClient,
   getTaskStatistics,
   checkTaskDeadlines,
+  exportTaskReport,
 };

@@ -420,6 +420,7 @@ const exportRevenueReport = catchAsync(async (req, res) => {
     status,
     startDate,
     endDate,
+    search,
     format = "excel",
   } = req.query;
 
@@ -435,6 +436,7 @@ const exportRevenueReport = catchAsync(async (req, res) => {
       status: status as InvoiceStatus,
       startDate: startDate ? new Date(startDate as string) : undefined,
       endDate: endDate ? new Date(endDate as string) : undefined,
+      search: search as string,
     },
     currentUserRole,
     currentUserBranchId
