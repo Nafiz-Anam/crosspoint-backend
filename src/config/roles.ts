@@ -2,59 +2,59 @@ import { Role, Permission } from "@prisma/client";
 
 // Shared permissions for ADMIN, MANAGER, and HR - they have the same power, only labels differ
 const adminManagerHrPermissions = [
-  // Employee Management
-  Permission.CREATE_EMPLOYEE,
-  Permission.READ_EMPLOYEE,
-  Permission.UPDATE_EMPLOYEE,
-  Permission.DELETE_EMPLOYEE,
-  Permission.MANAGE_EMPLOYEES,
+    // Employee Management
+    Permission.CREATE_EMPLOYEE,
+    Permission.READ_EMPLOYEE,
+    Permission.UPDATE_EMPLOYEE,
+    Permission.DELETE_EMPLOYEE,
+    Permission.MANAGE_EMPLOYEES,
 
-  // Client Management
-  Permission.CREATE_CLIENT,
-  Permission.READ_CLIENT,
-  Permission.UPDATE_CLIENT,
-  Permission.DELETE_CLIENT,
+    // Client Management
+    Permission.CREATE_CLIENT,
+    Permission.READ_CLIENT,
+    Permission.UPDATE_CLIENT,
+    Permission.DELETE_CLIENT,
 
-  // Task Management
-  Permission.CREATE_TASK,
-  Permission.READ_TASK,
-  Permission.UPDATE_TASK,
-  Permission.DELETE_TASK,
-  Permission.ASSIGN_TASK,
+    // Task Management
+    Permission.CREATE_TASK,
+    Permission.READ_TASK,
+    Permission.UPDATE_TASK,
+    Permission.DELETE_TASK,
+    Permission.ASSIGN_TASK,
 
-  // Branch Management
-  Permission.CREATE_BRANCH,
-  Permission.READ_BRANCH,
-  Permission.UPDATE_BRANCH,
-  Permission.DELETE_BRANCH,
+    // Branch Management
+    Permission.CREATE_BRANCH,
+    Permission.READ_BRANCH,
+    Permission.UPDATE_BRANCH,
+    Permission.DELETE_BRANCH,
 
-  // Service Management
-  Permission.CREATE_SERVICE,
-  Permission.READ_SERVICE,
-  Permission.UPDATE_SERVICE,
-  Permission.DELETE_SERVICE,
+    // Service Management
+    Permission.CREATE_SERVICE,
+    Permission.READ_SERVICE,
+    Permission.UPDATE_SERVICE,
+    Permission.DELETE_SERVICE,
 
-  // Payment Methods Management
-  Permission.CREATE_PAYMENT_METHOD,
-  Permission.READ_PAYMENT_METHOD,
-  Permission.UPDATE_PAYMENT_METHOD,
-  Permission.DELETE_PAYMENT_METHOD,
+    // Payment Methods Management
+    Permission.CREATE_PAYMENT_METHOD,
+    Permission.READ_PAYMENT_METHOD,
+    Permission.UPDATE_PAYMENT_METHOD,
+    Permission.DELETE_PAYMENT_METHOD,
 
-  // Invoice Management
-  Permission.CREATE_INVOICE,
-  Permission.READ_INVOICE,
-  Permission.UPDATE_INVOICE,
-  Permission.DELETE_INVOICE,
+    // Invoice Management
+    Permission.CREATE_INVOICE,
+    Permission.READ_INVOICE,
+    Permission.UPDATE_INVOICE,
+    Permission.DELETE_INVOICE,
 
-  // Bank Account Management
-  Permission.CREATE_BANK_ACCOUNT,
-  Permission.READ_BANK_ACCOUNT,
-  Permission.UPDATE_BANK_ACCOUNT,
-  Permission.DELETE_BANK_ACCOUNT,
+    // Bank Account Management
+    Permission.CREATE_BANK_ACCOUNT,
+    Permission.READ_BANK_ACCOUNT,
+    Permission.UPDATE_BANK_ACCOUNT,
+    Permission.DELETE_BANK_ACCOUNT,
 
-  // Report Management
-  Permission.GENERATE_REPORTS,
-  Permission.VIEW_REPORTS,
+    // Report Management
+    Permission.GENERATE_REPORTS,
+    Permission.VIEW_REPORTS,
 ];
 
 // Define permissions for each role
