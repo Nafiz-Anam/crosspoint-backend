@@ -28,8 +28,8 @@ COPY .env.production .env
 
 # Generate Prisma client with retry logic
 RUN for i in 1 2 3; do \
-      pnpm prisma generate && break || \
-      (echo "Prisma generate attempt $i failed, retrying in $((i * 5)) seconds..." && sleep $((i * 5))); \
+    pnpm prisma generate && break || \
+    (echo "Prisma generate attempt $i failed, retrying in $((i * 5)) seconds..." && sleep $((i * 5))); \
     done || (echo "Prisma generate failed after 3 attempts" && exit 1)
 
 # Build the app
@@ -38,6 +38,6 @@ RUN pnpm build
 # Make startup script executable
 RUN chmod +x startup.sh
 
-EXPOSE 8000
+EXPOSE 5000
 
 CMD ["./startup.sh"]

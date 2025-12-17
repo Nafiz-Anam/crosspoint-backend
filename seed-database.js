@@ -325,23 +325,37 @@ function generateIBAN() {
   return prefix + number;
 }
 
+// Helper function to safely delete from a table
+async function safeDeleteMany(model, modelName) {
+  try {
+    await model.deleteMany();
+  } catch (error) {
+    // If table doesn't exist, that's okay - we'll create it
+    if (error.code === 'P2021' || error.message?.includes('does not exist')) {
+      console.log(`   ⚠️  Table for ${modelName} doesn't exist yet, skipping delete...`);
+    } else {
+      throw error;
+    }
+  }
+}
+
 async function seedDatabase() {
   try {
     console.log("🌱 Starting database seeding...");
 
     // Clear existing data (in reverse order of dependencies)
     console.log("🧹 Clearing existing data...");
-    await prisma.invoiceItem.deleteMany();
-    await prisma.invoice.deleteMany();
-    await prisma.task.deleteMany();
-    await prisma.attendance.deleteMany();
-    await prisma.token.deleteMany();
-    await prisma.otp.deleteMany();
-    await prisma.client.deleteMany();
-    await prisma.employee.deleteMany();
-    await prisma.service.deleteMany();
-    await prisma.bankAccount.deleteMany();
-    await prisma.branch.deleteMany();
+    await safeDeleteMany(prisma.invoiceItem, 'InvoiceItem');
+    await safeDeleteMany(prisma.invoice, 'Invoice');
+    await safeDeleteMany(prisma.task, 'Task');
+    await safeDeleteMany(prisma.attendance, 'Attendance');
+    await safeDeleteMany(prisma.token, 'Token');
+    await safeDeleteMany(prisma.otp, 'Otp');
+    await safeDeleteMany(prisma.client, 'Client');
+    await safeDeleteMany(prisma.employee, 'Employee');
+    await safeDeleteMany(prisma.service, 'Service');
+    await safeDeleteMany(prisma.bankAccount, 'BankAccount');
+    await safeDeleteMany(prisma.branch, 'Branch');
 
     // 1. Create Branches (15 branches)
     console.log("🏢 Creating branches...");
@@ -650,7 +664,6 @@ async function seedDatabase() {
         new Date(2024, 0, 1),
         new Date(2024, 11, 31)
       );
-      const dueDate = new Date(issuedDate.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days later
 
       const invoice = await prisma.invoice.create({
         data: {
@@ -669,7 +682,6 @@ async function seedDatabase() {
           taxRate: taxRate,
           status:
             invoiceStatuses[Math.floor(Math.random() * invoiceStatuses.length)],
-          dueDate: dueDate,
           issuedDate: issuedDate,
           branchId: branches[i % branches.length].id,
           employeeId: employees[i % employees.length].id,
