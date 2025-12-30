@@ -38,6 +38,9 @@ const envVarsSchema = Joi.object()
     BASE_URL: Joi.string()
       .default("http://localhost:8000")
       .description("Base URL for the application"),
+    ALLOWED_ORIGINS: Joi.string()
+      .default("http://localhost:3000,http://127.0.0.1:3000,http://frontend:3000")
+      .description("CORS allowed origins"),
   })
   .unknown();
 
@@ -75,4 +78,5 @@ export default {
     from: envVars.EMAIL_FROM,
   },
   baseUrl: envVars.BASE_URL,
+  allowedOrigins: envVars.ALLOWED_ORIGINS.split(","),
 };

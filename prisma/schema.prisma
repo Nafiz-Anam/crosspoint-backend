@@ -120,7 +120,7 @@ model Invoice {
   invoiceId      String?       @unique // Format: INV-BR001-2024-001, INV-BR002-2024-001, etc.
   clientId       String
   client         Client        @relation(fields: [clientId], references: [id])
-  taskId         String? // Optional: Invoice can be generated from a task
+  taskId         String?       @unique // Optional: Invoice can be generated from a task
   task           Task?         @relation(fields: [taskId], references: [id])
   invoiceNumber  String        @unique
   totalAmount    Float

@@ -9,14 +9,18 @@ import config from "../config/config";
 import morgan from "../config/morgan";
 import xss from "../middlewares/xss";
 import { jwtStrategy } from "../config/passport";
-import { authLimiter } from "../middlewares/rateLimiter";
+import { authLimiter, globalLimiter } from "../middlewares/rateLimiter";
 import routes from "../routes/v1";
 import { errorConverter, errorHandler } from "../middlewares/error";
 import ApiError from "../utils/ApiError";
 import cookieParser from "cookie-parser";
+import hpp from "hpp";
 import { setupSwaggerDocs } from "../config/swagger";
 
 const app = express();
+
+// trust proxy
+app.set("trust proxy", true);
 
 if (config.env !== "test") {
   app.use(morgan.successHandler);
@@ -42,19 +46,22 @@ app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 // sanitize request data
 app.use(xss());
 
+// prevent http parameter pollution
+app.use(hpp());
+
+// limit repeated failed requests to auth endpoints
+if (config.env === "production") {
+  app.use(globalLimiter);
+  app.use("/v1/auth", authLimiter);
+}
+
 // gzip compression
 app.use(compression());
 
 // enable cors
 app.use(
   cors({
-    origin: [
-      "http://localhost:3000",
-      "http://127.0.0.1:3000",
-      "http://frontend:3000",
-      "https://app.crosspointitaly.com",
-      "https://www.app.crosspointitaly.com",
-    ],
+    origin: config.allowedOrigins,
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "x-client-type"],
@@ -66,10 +73,7 @@ app.options("*", cors());
 app.use(passport.initialize());
 passport.use("jwt", jwtStrategy);
 
-// limit repeated failed requests to auth endpoints
-if (config.env === "production") {
-  app.use("/v1/auth", authLimiter);
-}
+
 
 // Swagger API docs
 setupSwaggerDocs(app);

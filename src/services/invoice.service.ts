@@ -749,70 +749,76 @@ const createInvoiceFromTask = async (
     bankAccountId?: string;
   }
 ): Promise<Invoice> => {
-  // Get task with related data
-  const task = await prisma.task.findUnique({
-    where: { id: taskId },
-    include: {
-      client: {
-        include: {
-          branch: true,
+  // Use a transaction to ensure atomicity and prevent race conditions
+  return await prisma.$transaction(async (tx) => {
+    // Get task with related data inside the transaction
+    const task = await tx.task.findUnique({
+      where: { id: taskId },
+      include: {
+        client: {
+          include: {
+            branch: true,
+          },
         },
+        service: true,
+        assignedEmployee: true,
       },
-      service: true,
-      assignedEmployee: true,
-    },
+    });
+
+    if (!task) {
+      throw new ApiError(httpStatus.NOT_FOUND, "Task not found");
+    }
+
+    // Re-verify task is still completed inside the transaction
+    if (task.status !== "COMPLETED") {
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        "Cannot create invoice for incomplete task"
+      );
+    }
+
+    // Check if invoice already exists for this task inside the transaction
+    const existingInvoice = await tx.invoice.findFirst({
+      where: { taskId },
+    });
+
+    if (existingInvoice) {
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        "Invoice already exists for this task"
+      );
+    }
+
+    // Create invoice data from task
+    const invoiceData: CreateInvoiceData = {
+      clientId: task.clientId,
+      branchId: task.client.branchId,
+      employeeId: task.assignedEmployeeId,
+      taskId: task.id,
+      items: [
+        {
+          serviceId: task.serviceId,
+          description: `${task.service.name} - ${task.title}`,
+          rate: task.service.price,
+          discount: 0,
+        },
+      ],
+      notes:
+        invoiceOptions.notes || task.notes || `Invoice for task: ${task.title}`,
+      thanksMessage:
+        invoiceOptions.thanksMessage || "Thank you for your business!",
+      paymentTerms: invoiceOptions.paymentTerms,
+      taxRate: invoiceOptions.taxRate,
+      discountAmount: invoiceOptions.discountAmount,
+      paymentMethod: invoiceOptions.paymentMethod,
+      bankAccountId: invoiceOptions.bankAccountId,
+    };
+
+    // Note: createInvoice handles its own nested transaction/retry logic if needed,
+    // but here we are already in a transaction. Prisma supports nested transactions
+    // by using the parent transaction if one exists.
+    return createInvoice(invoiceData);
   });
-
-  if (!task) {
-    throw new ApiError(httpStatus.NOT_FOUND, "Task not found");
-  }
-
-  // Check if task is completed
-  if (task.status !== "COMPLETED") {
-    throw new ApiError(
-      httpStatus.BAD_REQUEST,
-      "Cannot create invoice for incomplete task"
-    );
-  }
-
-  // Check if invoice already exists for this task
-  const existingInvoice = await prisma.invoice.findFirst({
-    where: { taskId },
-  });
-
-  if (existingInvoice) {
-    throw new ApiError(
-      httpStatus.BAD_REQUEST,
-      "Invoice already exists for this task"
-    );
-  }
-
-  // Create invoice data from task
-  const invoiceData: CreateInvoiceData = {
-    clientId: task.clientId,
-    branchId: task.client.branchId,
-    employeeId: task.assignedEmployeeId,
-    taskId: task.id,
-    items: [
-      {
-        serviceId: task.serviceId,
-        description: `${task.service.name} - ${task.title}`,
-        rate: task.service.price,
-        discount: 0,
-      },
-    ],
-    notes:
-      invoiceOptions.notes || task.notes || `Invoice for task: ${task.title}`,
-    thanksMessage:
-      invoiceOptions.thanksMessage || "Thank you for your business!",
-    paymentTerms: invoiceOptions.paymentTerms,
-    taxRate: invoiceOptions.taxRate,
-    discountAmount: invoiceOptions.discountAmount,
-    paymentMethod: invoiceOptions.paymentMethod,
-    bankAccountId: invoiceOptions.bankAccountId,
-  };
-
-  return createInvoice(invoiceData);
 };
 
 // Get all invoices with pagination

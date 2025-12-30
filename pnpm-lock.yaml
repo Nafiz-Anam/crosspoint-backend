@@ -44,6 +44,9 @@ importers:
       helmet:
         specifier: ^7.1.0
         version: 7.2.0
+      hpp:
+        specifier: ^0.2.3
+        version: 0.2.3
       http-status:
         specifier: ^1.7.4
         version: 1.8.1
@@ -126,6 +129,9 @@ importers:
       '@types/express':
         specifier: ^4.17.21
         version: 4.17.23
+      '@types/hpp':
+        specifier: ^0.2.7
+        version: 0.2.7
       '@types/http-status-codes':
         specifier: ^1.2.0
         version: 1.2.0
@@ -471,6 +477,9 @@ packages:
 
   '@types/express@4.17.23':
     resolution: {integrity: sha512-Crp6WY9aTYP3qPi2wGDo9iUe/rceX01UMhnF1jmwDcKCFM6cx7YhGP/Mpr3y9AASpfHixIG0E6azCcL5OcDHsQ==}
+
+  '@types/hpp@0.2.7':
+    resolution: {integrity: sha512-YSQBkTwZepklRez0wgsljeewMytGNKgBAZR1YbmE0X49+elqkZ+fr/gvB407wL9Dl7a/Kv3W04yJueRmEHytBw==}
 
   '@types/http-errors@2.0.5':
     resolution: {integrity: sha512-r8Tayk8HJnX0FztbZN7oVqGccWgw98T/0neJphO91KkmOzug1KkofZURD4UaD5uH8AqcFLfdPErnBod0u71/qg==}
@@ -1392,6 +1401,10 @@ packages:
   helmet@7.2.0:
     resolution: {integrity: sha512-ZRiwvN089JfMXokizgqEPXsl2Guk094yExfoDXR0cBYWxtBbaSww/w+vT4WEJsBW2iTUi1GgZ6swmoug3Oy4Xw==}
     engines: {node: '>=16.0.0'}
+
+  hpp@0.2.3:
+    resolution: {integrity: sha512-4zDZypjQcxK/8pfFNR7jaON7zEUpXZxz4viyFmqjb3kWNWAHsLEUmWXcdn25c5l76ISvnD6hbOGO97cXUI3Ryw==}
+    engines: {node: '>=0.10.0'}
 
   http-errors@2.0.0:
     resolution: {integrity: sha512-FtwrG/euBzaEjYeRqOgly7G0qviiXoJWnvEH2Z1plBdXgbyjv34pHTSb9zoeHMyDy33+DWy5Wt9Wo+TURtOYSQ==}
@@ -3027,6 +3040,10 @@ snapshots:
       '@types/qs': 6.14.0
       '@types/serve-static': 1.15.8
 
+  '@types/hpp@0.2.7':
+    dependencies:
+      '@types/express': 4.17.23
+
   '@types/http-errors@2.0.5': {}
 
   '@types/http-status-codes@1.2.0':
@@ -4005,6 +4022,11 @@ snapshots:
       function-bind: 1.1.2
 
   helmet@7.2.0: {}
+
+  hpp@0.2.3:
+    dependencies:
+      lodash: 4.17.21
+      type-is: 1.6.18
 
   http-errors@2.0.0:
     dependencies:
