@@ -51,6 +51,17 @@ model Employee {
   profileImage                 String? // Profile image URL
   isEmailVerified              Boolean      @default(false)
   isActive                     Boolean      @default(true)
+  // Employee Management fields
+  departmentId                 String?
+  department                   Department?   @relation(fields: [departmentId], references: [id])
+  designationId                String?
+  designation                  Designation?  @relation(fields: [designationId], references: [id])
+  joiningDate                  DateTime? // Employee joining date
+  employmentType               EmploymentType? // FULL_TIME, PART_TIME, CONTRACT, INTERN
+  salary                       Float? // Monthly salary
+  address                      String? // Employee address
+  emergencyContactName         String? // Emergency contact name
+  emergencyContactPhone        String? // Emergency contact phone
   createdAt                    DateTime     @default(now())
   updatedAt                    DateTime     @updatedAt
   Token                        Token[] // Relation with Token model
@@ -58,8 +69,122 @@ model Employee {
   permissions                  Permission[] // Array of permissions (no relation needed)
   Invoice                      Invoice[]
   assignedTasks                Task[]
+  leaveRequests                LeaveRequest[]
+  leaveBalances                LeaveBalance[]
+  documents                    EmployeeDocument[]
 
   @@map("employees")
+}
+
+// Employee Management Models
+model Department {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  employees   Employee[]
+  designations Designation[]
+
+  @@map("departments")
+}
+
+model Designation {
+  id           String   @id @default(uuid())
+  name         String
+  departmentId String
+  department   Department @relation(fields: [departmentId], references: [id])
+  description String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  employees    Employee[]
+
+  @@unique([name, departmentId]) // Unique name per department
+  @@map("designations")
+}
+
+model LeaveType {
+  id          String   @id @default(uuid())
+  name        String   @unique // e.g., "Annual Leave", "Sick Leave", "Casual Leave"
+  code        String   @unique // e.g., "AL", "SL", "CL"
+  description String?
+  maxDays     Int? // Maximum days allowed per year (null = unlimited)
+  isPaid      Boolean  @default(true)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  leaveRequests LeaveRequest[]
+  leaveBalances LeaveBalance[]
+
+  @@map("leave_types")
+}
+
+model LeaveRequest {
+  id          String        @id @default(uuid())
+  employeeId String
+  employee   Employee      @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  leaveTypeId String
+  leaveType  LeaveType     @relation(fields: [leaveTypeId], references: [id])
+  startDate  DateTime
+  endDate    DateTime
+  days       Float // Number of days (can be decimal for half days)
+  reason     String?
+  status     LeaveRequestStatus @default(PENDING)
+  approvedBy String? // Employee ID who approved
+  approvedAt DateTime?
+  rejectedAt DateTime?
+  rejectionReason String?
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  @@map("leave_requests")
+}
+
+model LeaveBalance {
+  id          String   @id @default(uuid())
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  leaveTypeId String
+  leaveType  LeaveType @relation(fields: [leaveTypeId], references: [id])
+  year       Int // Year for which this balance applies
+  totalDays  Float @default(0) // Total days allocated
+  usedDays   Float @default(0) // Days used
+  pendingDays Float @default(0) // Days pending approval
+  balance    Float // Calculated: totalDays - usedDays - pendingDays
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([employeeId, leaveTypeId, year])
+  @@map("leave_balances")
+}
+
+model EmployeeDocument {
+  id          String   @id @default(uuid())
+  employeeId  String
+  employee    Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  name        String // Document name/title
+  type        String // Document type (e.g., "Contract", "Certificate", "ID", "Resume")
+  fileUrl     String // File URL/path
+  fileName    String // Original file name
+  fileSize    Int? // File size in bytes
+  mimeType    String? // MIME type
+  description String?
+  expiryDate  DateTime? // Expiry date if applicable
+  isVerified  Boolean  @default(false)
+  verifiedBy  String? // Employee ID who verified
+  verifiedAt  DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("employee_documents")
 }
 
 model Attendance {
@@ -339,4 +464,19 @@ enum TaskStatus {
   COMPLETED
   CANCELLED
   ON_HOLD
+}
+
+enum EmploymentType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  INTERN
+  FREELANCE
+}
+
+enum LeaveRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
 }

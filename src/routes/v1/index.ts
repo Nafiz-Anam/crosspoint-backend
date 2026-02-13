@@ -11,6 +11,10 @@ import companyInfoRoute from "./CompanyInfoRoute/companyInfo.route";
 import dashboardRoute from "./DashboardRoute/dashboard.route";
 import profileRoute from "./ProfileRoute/profile.route";
 import taskRoute from "./task.route";
+import departmentRoute from "./DepartmentRoute/department.route";
+import designationRoute from "./DesignationRoute/designation.route";
+import leaveRoute from "./LeaveRoute/leave.route";
+import employeeDocumentRoute from "./EmployeeDocumentRoute/employeeDocument.route";
 
 const router = express.Router();
 
@@ -62,6 +66,22 @@ const defaultRoutes = [
   {
     path: "/tasks",
     route: taskRoute,
+  },
+  {
+    path: "/departments",
+    route: departmentRoute,
+  },
+  {
+    path: "/designations",
+    route: designationRoute,
+  },
+  {
+    path: "/leave",
+    route: leaveRoute,
+  },
+  {
+    path: "/employee-documents",
+    route: employeeDocumentRoute,
   },
 ];
 

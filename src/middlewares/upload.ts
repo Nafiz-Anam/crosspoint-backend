@@ -5,11 +5,23 @@ import path from "path";
 const storage = multer.memoryStorage();
 
 const fileFilter = (req: any, file: any, cb: any) => {
-  // Check file type
-  if (file.mimetype.startsWith("image/")) {
+  // Allow images and common document types
+  const allowedMimeTypes = [
+    "image/",
+    "application/pdf",
+    "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "application/vnd.ms-excel",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "text/plain",
+  ];
+  
+  const isAllowed = allowedMimeTypes.some(type => file.mimetype.startsWith(type) || file.mimetype === type);
+  
+  if (isAllowed) {
     cb(null, true);
   } else {
-    cb(new Error("Only image files are allowed!"), false);
+    cb(new Error("File type not allowed! Allowed types: images, PDF, Word, Excel, text files"), false);
   }
 };
 
