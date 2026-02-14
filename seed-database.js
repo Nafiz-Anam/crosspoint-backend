@@ -118,7 +118,7 @@ const serviceNames = [
   "Sviluppo Web Application",
   "Design Grafico",
   "Marketing Digitale",
-  "Contabilità e Fatturazione",
+  "Contabilità e Ricevuta",
   "Consulenza Legale",
   "Gestione Risorse Umane",
   "Supporto Tecnico IT",
@@ -688,7 +688,7 @@ async function seedDatabase() {
           bankAccountId: bankAccounts[i % bankAccounts.length].id,
           paymentMethod:
             paymentMethods[Math.floor(Math.random() * paymentMethods.length)],
-          notes: `Fattura per servizi professionali - ${taskTitles[i]}`,
+          notes: `Ricevuta per servizi professionali - ${taskTitles[i]}`,
           thanksMessage: "Grazie per aver scelto i nostri servizi!",
           paymentTerms: "Pagamento entro 30 giorni dalla data di emissione",
           companyName: "Crosspoint S.r.l.",
